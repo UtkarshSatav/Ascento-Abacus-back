@@ -6,7 +6,8 @@ const logger = require('./utils/logger');
 const { startReminderJob } = require('./services/reminder.service');
 
 const PORT = Number(process.env.PORT) || 4000;
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/school_erp';
+
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/school_erp';
 
 async function start() {
   await connectDB(MONGO_URI);
