@@ -1,3 +1,5 @@
+require('dotenv').config(); // load env variables
+
 const app = require('./app');
 const connectDB = require('./config/db');
 const logger = require('./utils/logger');
