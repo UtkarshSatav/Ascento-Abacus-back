@@ -54,8 +54,8 @@ Students are mapped to:
 **Request:**
 ```json
 {
-  "email": "admin@school.com",
-  "password": "securePassword123"
+  "email": "admin@schoolerp.com",
+  "password": "Admin@123"
 }
 ```
 
@@ -89,8 +89,8 @@ Students are mapped to:
 **Request:**
 ```json
 {
-  "email": "teacher@school.com",
-  "password": "teacherPass123"
+  "email": "teacher1@schoolerp.com",
+  "password": "Teacher@123"
 }
 ```
 
@@ -104,10 +104,11 @@ Students are mapped to:
     "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
     "user": {
       "_id": "507f1f77bcf86cd799439012",
-      "email": "teacher@school.com",
+      "email": "teacher1@schoolerp.com",
       "role": "teacher",
-      "fullName": "Mr. John Doe",
-      "qualification": "B.Tech"
+      "fullName": "Amit Sharma",
+      "qualification": "B.Tech",
+      "phone": "9000000001"
     }
   }
 }
@@ -116,6 +117,8 @@ Students are mapped to:
 **Error Response:**
 - **401 Unauthorized**: Invalid credentials
 - **400 Bad Request**: Missing required fields
+
+*Note: Use seeded test teachers (teacher1@schoolerp.com through teacher5@schoolerp.com) with password `Teacher@123`*
 
 ---
 
@@ -510,20 +513,24 @@ Authorization: Bearer <admin_token>
 
 ---
 
-### 2. Create Student
+### 2. Create Student (Admin Panel)
 **POST** `/admin/create-student`
+
+**Description:** 
+Alias for `/students` endpoint designed specifically for admin dashboard workflows. Uses identical validation and logic.
 
 **Headers:**
 ```
 Authorization: Bearer <admin_token>
+Content-Type: application/json (or multipart/form-data for file uploads)
 ```
 
-**Request:**
+**Request (JSON):**
 ```json
 {
   "fullName": "Raj Kumar",
   "dateOfBirth": "2012-05-15",
-  "gender": "Male",
+  "gender": "male",
   "domainId": "507f1f77bcf86cd799439017",
   "classId": "507f1f77bcf86cd799439023",
   "className": "Class 10",
@@ -533,11 +540,82 @@ Authorization: Bearer <admin_token>
   "parentPhone": "+919876543212",
   "parentEmail": "ramesh.kumar@email.com",
   "address": "123 Main Street, City",
+  "city": "Mumbai",
+  "state": "Maharashtra",
+  "pincode": "400001",
   "admissionDate": "2025-06-01",
   "previousSchool": "ABC School",
-  "previousMarks": 85
+  "previousMarks": [
+    {
+      "examName": "Class 9 Final",
+      "percentage": 85,
+      "year": 2024
+    }
+  ],
+  "profilePhotoBase64": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ...",
+  "documents": [
+    {
+      "name": "Birth Certificate",
+      "url": "https://example.com/birth-cert.pdf"
+    }
+  ],
+  "documentUploads": [
+    {
+      "name": "Transfer Certificate",
+      "base64": "data:application/pdf;base64,JVBERi0xLjQ..."
+    }
+  ]
 }
 ```
+
+**Request (Multipart/Form-Data for File Upload):**
+```
+fullName: Raj Kumar
+dateOfBirth: 2012-05-15
+gender: male
+domainId: 507f1f77bcf86cd799439017
+classId: 507f1f77bcf86cd799439023
+className: Class 10
+section: A
+rollNumber: STU010
+parentName: Mr. Ramesh Kumar
+parentPhone: +919876543212
+parentEmail: ramesh.kumar@email.com
+address: 123 Main Street, City
+admissionDate: 2025-06-01
+previousSchool: ABC School
+previousMarks: [{"examName":"Class 9 Final","percentage":85,"year":2024}]
+profilePhoto: <file upload>
+documents: [{"name":"Birth Certificate","url":"..."}]
+documentUploads: [<file upload 1>, <file upload 2>]
+```
+
+**Field Descriptions:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `fullName` | String | Yes | Student's full name |
+| `dateOfBirth` | Date | Yes | Format: YYYY-MM-DD (calculates age automatically) |
+| `gender` | String | Yes | Options: `male`, `female`, `other` |
+| `domainId` | ObjectId | Yes | Domain ID (Vedic Math, Abacus, Generic School) |
+| `classId` | ObjectId | Yes | Class ID (must belong to the selected domain) |
+| `className` | String | Yes | Class name for easy reference |
+| `section` | String | Yes | Section (A, B, C, etc.) |
+| `rollNumber` | String | Yes | Unique roll number per class |
+| `parentName` | String | Yes | Parent/Guardian full name |
+| `parentPhone` | String | Yes | Parent phone number for contact |
+| `parentEmail` | String | No | Parent email address |
+| `address` | String | No | Student's residential address |
+| `city` | String | No | City name |
+| `state` | String | No | State name |
+| `pincode` | String | No | Postal code |
+| `admissionDate` | Date | No | Admission date (default: today) |
+| `previousSchool` | String | No | Previous school name |
+| `previousMarks` | Array | No | Array of previous exam marks with percentage and year |
+| `profilePhoto` | File | No | Student profile photo (PNG/JPG) |
+| `profilePhotoBase64` | String | No | Profile photo as base64 string |
+| `documents` | Array | No | Pre-uploaded documents with name and URL |
+| `documentUploads` | Array | No | Documents as base64 (e.g., birth certificate, transfer cert) |
 
 **Success Response (201):**
 ```json
@@ -546,24 +624,44 @@ Authorization: Bearer <admin_token>
   "message": "Student created successfully",
   "data": {
     "_id": "507f1f77bcf86cd799439024",
-    "username": "STU010",
+    "userId": "507f1f77bcf86cd799439100",
+    "username": "stu10",
     "role": "student",
     "fullName": "Raj Kumar",
-    "email": "raj.kumar@student.school.com",
+    "dateOfBirth": "2012-05-15",
+    "gender": "male",
+    "age": 13,
     "class": "Class 10",
     "section": "A",
     "rollNumber": "STU010",
     "parentId": "507f1f77bcf86cd799439025",
+    "parentName": "Mr. Ramesh Kumar",
+    "parentPhone": "+919876543212",
+    "profilePhoto": "https://cloudinary.com/school-erp/students/profile/...",
+    "documents": [
+      {
+        "name": "Birth Certificate",
+        "url": "https://cloudinary.com/school-erp/students/documents/..."
+      }
+    ],
     "credentials": {
+      "username": "stu10",
       "tempPassword": "StudentPass@1234"
-    }
+    },
+    "parentCredentials": {
+      "phone": "+919876543212",
+      "password": "ParentPass@5678"
+    },
+    "createdAt": "2026-03-05T10:00:00Z"
   }
 }
+
 ```
 
 **Error Response:**
-- **400 Bad Request**: Roll number already exists
-- **422 Unprocessable Entity**: Validation failed
+- **400 Bad Request**: Roll number already exists or class doesn't belong to domain
+- **404 Not Found**: Domain or class not found
+- **422 Unprocessable Entity**: Validation failed (e.g., invalid date format)
 
 ---
 
@@ -786,20 +884,32 @@ Authorization: Bearer <admin_token>
 
 ## Student Management APIs
 
-### 1. Create Student
+### Quick Reference - Student Creation Endpoints
+
+| Endpoint | Method | Auth | Role | Use Case | Backend Route |
+|----------|--------|------|------|----------|---|
+| `/students` | POST | Yes | admin | General student registration form | `src/routes/students.routes.js` |
+| `/admin/create-student` | POST | Yes | admin | Admin dashboard student creation | `src/routes/admin.routes.js` |
+
+**Note:** Both endpoints use the same validation schema (`student.validation.js`) and call the same controller (`student.controller.js`). Choose based on your UI context.
+
+---
+
+### 1. Create Student (General)
 **POST** `/students`
 
 **Headers:**
 ```
 Authorization: Bearer <admin_token>
+Content-Type: application/json (or multipart/form-data for file uploads)
 ```
 
-**Request:**
+**Request (JSON with Base64 Photo):**
 ```json
 {
   "fullName": "Priya Sharma",
   "dateOfBirth": "2011-08-20",
-  "gender": "Female",
+  "gender": "female",
   "domainId": "507f1f77bcf86cd799439017",
   "classId": "507f1f77bcf86cd799439023",
   "className": "Class 10",
@@ -809,9 +919,67 @@ Authorization: Bearer <admin_token>
   "parentPhone": "+919876543213",
   "parentEmail": "meera.sharma@email.com",
   "address": "456 Oak Avenue, City",
-  "admissionDate": "2025-06-01"
+  "admissionDate": "2025-06-01",
+  "previousSchool": "XYZ Academy",
+  "previousMarks": [
+    {
+      "examName": "Class 9 Annual",
+      "percentage": 92,
+      "year": 2024
+    },
+    {
+      "examName": "Class 9 Half Yearly",
+      "percentage": 88,
+      "year": 2023
+    }
+  ],
+  "profilePhotoBase64": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgH..."
 }
 ```
+
+**Request (Multipart/Form-Data with File Upload):**
+```
+fullName: Priya Sharma
+dateOfBirth: 2011-08-20
+gender: female
+domainId: 507f1f77bcf86cd799439017
+classId: 507f1f77bcf86cd799439023
+className: Class 10
+section: B
+rollNumber: STU011
+parentName: Mrs. Meera Sharma
+parentPhone: +919876543213
+parentEmail: meera.sharma@email.com
+address: 456 Oak Avenue, City
+admissionDate: 2025-06-01
+previousSchool: XYZ Academy
+previousMarks: [{"examName":"Class 9 Annual","percentage":92,"year":2024}]
+profilePhoto: <image file>
+documents: [<pdf file 1>, <pdf file 2>]
+```
+
+**Field Descriptions:**
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `fullName` | String | Yes | Student's legal full name |
+| `dateOfBirth` | Date | Yes | Format: YYYY-MM-DD |
+| `gender` | String | Yes | `male` \| `female` \| `other` |
+| `domainId` | ObjectId | Yes | Domain reference (Vedic Math/Abacus/Generic School) |
+| `classId` | ObjectId | Yes | Must belong to selected domain |
+| `className` | String | Yes | Grade level (Class 1, Class 10, Level 3, etc.) |
+| `section` | String | Yes | A, B, C, etc. |
+| `rollNumber` | String | Yes | Unique per class-section combination |
+| `parentName` | String | Yes | Parent or guardian name |
+| `parentPhone` | String | Yes | Contact number (WhatsApp preferred) |
+| `parentEmail` | String | No | Email for notifications |
+| `address` | String | No | Residential address |
+| `admissionDate` | Date | No | Defaults to today if not provided |
+| `previousSchool` | String | No | Last school attended |
+| `previousMarks` | Array | No | Array of past exam records with percentage and year |
+| `profilePhoto` | File | No | JPG/PNG image (multipart upload) |
+| `profilePhotoBase64` | String | No | Base64 encoded image string |
+| `documentUploads` | Array | No | Birth cert, transfer cert, etc. |
 
 **Success Response (201):**
 ```json
@@ -820,15 +988,65 @@ Authorization: Bearer <admin_token>
   "message": "Student created successfully",
   "data": {
     "_id": "507f1f77bcf86cd799439029",
+    "userId": "507f1f77bcf86cd799439101",
+    "username": "stu11",
     "fullName": "Priya Sharma",
-    "username": "STU011",
+    "dateOfBirth": "2011-08-20",
+    "age": 14,
+    "gender": "female",
     "role": "student",
     "class": "Class 10",
     "section": "B",
-    "rollNumber": "STU011"
+    "rollNumber": "STU011",
+    "parentName": "Mrs. Meera Sharma",
+    "parentPhone": "+919876543213",
+    "profilePhoto": "https://res.cloudinary.com/your-cloud/image/upload/...",
+    "previousSchoolPerformance": {
+      "school": "XYZ Academy",
+      "averagePercentage": 90,
+      "bestExam": {
+        "name": "Class 9 Annual",
+        "percentage": 92
+      }
+    },
+    "credentials": {
+      "username": "stu11",
+      "tempPassword": "TempSTU@2024"
+    },
+    "parentCredentials": {
+      "phone": "+919876543213",
+      "password": "TempParent@2024",
+      "instructions": "Use these credentials to login to parent portal"
+    },
+    "createdAt": "2026-03-05T10:00:00Z"
   }
 }
 ```
+
+**Photo Upload - Supported Methods:**
+
+**Method 1: Base64 String (JSON)**
+```json
+{
+  "profilePhotoBase64": "data:image/jpeg;base64,/9j/4AAQSkZJRg..."
+}
+```
+
+**Method 2: Direct File (Multipart)**
+```
+POST /students
+Content-Type: multipart/form-data
+Authorization: Bearer <token>
+
+[Other fields...]
+profilePhoto: <binary file data>
+```
+
+**Error Responses:**
+- **400 Bad Request**: Roll number already exists or class doesn't belong to domain
+- **404 Not Found**: Domain or class ID invalid
+- **413 Payload Too Large**: Photo exceeds 5MB
+- **422 Unprocessable Entity**: Invalid date format or missing required fields
 
 ---
 
@@ -979,6 +1197,115 @@ Authorization: Bearer <token>
   }
 }
 ```
+
+---
+
+## Student Creation Backend Implementation
+
+### What Happens When You Create a Student?
+
+When a student is created via either `/students` or `/admin/create-student`, the backend performs the following steps:
+
+#### 1. **Data Validation**
+- Validates request using `createStudentSchema` (Joi validator)
+- Checks required fields (name, DOB, class, roll number, parent info)
+- Validates date format and enums (gender, domain, class existence)
+
+#### 2. **Duplicate Check**
+- Verifies roll number is unique per class-section
+- Ensures class belongs to selected domain
+- Throws 409 error if conflict found
+
+#### 3. **Parent Management**
+- Checks if parent already exists by phone number
+- If exists: link student to existing parent and return parent ID
+- If new: creates new User record with PARENT role + Parent profile
+  - Auto-generates temporary password for parent
+  - Returns parent credentials in response
+
+#### 4. **Student Account Creation**
+- Creates new User record with STUDENT role
+- Generates unique username: `stu{rollNumber}` (auto-incremented if duplicate)
+- Creates temporary password for student
+- Creates Student profile linked to User and Parent
+
+#### 5. **File Uploads**
+- Handles profile photo (JPG/PNG max 5MB)
+  - Base64 string: decoded and uploaded to Cloudinary
+  - Multipart file: directly uploaded to Cloudinary
+- Uploads any attached documents (PDFs, images)
+- Folder structure: `school-erp/students/profile/` and `school-erp/students/documents/`
+
+#### 6. **Database Updates**
+- Adds student ID to parent's `children` array
+- Sets student as active
+- Links user.profileId to student._id
+- Indexes created for fast lookups (rollNumber, parentPhone, fullName)
+
+#### 7. **Response**
+- Returns complete student record
+- Includes auto-generated credentials
+- Includes parent credentials (if new parent created)
+- Calculates age from DOB
+
+### Backend Files Involved
+
+```
+src/
+├── controllers/student.controller.js       # Request handling
+├── controllers/admin.controller.js         # Admin-specific requests
+├── services/student.service.js             # Business logic (createStudent)
+├── models/student.model.js                 # Schema definition
+├── models/parent.model.js                  # Parent schema
+├── validators/student.validation.js        # Joi validation schema
+├── routes/students.routes.js               # POST /students endpoint
+├── routes/admin.routes.js                  # POST /admin/create-student endpoint
+└── utils/cloudinary.js                     # File upload handling
+```
+
+### Validation Rules
+
+```javascript
+// createStudentSchema (from student.validation.js)
+{
+  fullName: Joi.string().required(),
+  dateOfBirth: Joi.date().required(),
+  gender: Joi.string().valid('male', 'female', 'other').required(),
+  domainId: Joi.string().hex().length(24).required(),
+  classId: Joi.string().hex().length(24).required(),
+  className: Joi.string().required(),
+  section: Joi.string().required(),
+  rollNumber: Joi.string().required(),
+  parentName: Joi.string().required(),
+  parentPhone: Joi.string().pattern(/^\+?[0-9]{10,}$/).required(),
+  parentEmail: Joi.string().email().optional(),
+  address: Joi.string().optional(),
+  admissionDate: Joi.date().optional(),
+  previousSchool: Joi.string().optional(),
+  previousMarks: Joi.array().items(
+    Joi.object({
+      examName: Joi.string(),
+      percentage: Joi.number().min(0).max(100),
+      year: Joi.number()
+    })
+  ).optional(),
+  profilePhotoBase64: Joi.string().optional(),
+  profilePhoto: Joi.binary().optional(),
+  documents: Joi.array().optional(),
+  documentUploads: Joi.array().optional()
+}
+```
+
+### Error Handling
+
+| Error | Status | Cause |
+|-------|--------|-------|
+| Domain not found | 404 | Invalid domainId |
+| Class not found | 404 | Invalid classId |
+| Roll number already exists | 409 | Duplicate rollNumber |
+| Class doesn't belong to domain | 400 | Domain-Class mismatch |
+| Validation failed | 422 | Missing/invalid fields |
+| File upload failed | 500 | Cloudinary error |
 
 ---
 
@@ -2391,7 +2718,181 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1MDdmM
 
 ---
 
-## Environment Configuration
+## File Upload & Media Handling
+
+### Supported Upload Methods
+
+#### 1. **Base64 String (JSON)**
+Encode file as base64 and send in JSON payload.
+
+**Pros:**
+- Single JSON request
+- No multipart complexity
+- Works with CORS easily
+
+**Cons:**
+- ~33% larger payload size
+- Not ideal for large files (>5MB)
+
+**Example:** 
+```json
+{
+  "profilePhotoBase64": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBg..."
+}
+```
+
+#### 2. **Multipart/Form-Data (File Upload)**
+Traditional file upload using form-data.
+
+**Pros:**
+- Supports large files (up to 50MB)
+- Efficient transfer
+- Browser native
+
+**Cons:**
+- Requires multipart handling
+- More complex implementation
+
+**Example with cURL:**
+```bash
+curl -X POST http://localhost:4000/students \
+  -H "Authorization: Bearer <token>" \
+  -F "fullName=Raj Kumar" \
+  -F "dateOfBirth=2012-05-15" \
+  -F "gender=male" \
+  -F "domainId=507f1f77bcf86cd799439017" \
+  -F "classId=507f1f77bcf86cd799439023" \
+  -F "className=Class 10" \
+  -F "section=A" \
+  -F "rollNumber=STU010" \
+  -F "parentName=Mr. Ramesh Kumar" \
+  -F "parentPhone=+919876543212" \
+  -F "profilePhoto=@/path/to/photo.jpg"
+```
+
+**Example with JavaScript/Axios:**
+```javascript
+const formData = new FormData();
+formData.append('fullName', 'Raj Kumar');
+formData.append('dateOfBirth', '2012-05-15');
+formData.append('gender', 'male');
+formData.append('domainId', '507f1f77bcf86cd799439017');
+formData.append('classId', '507f1f77bcf86cd799439023');
+formData.append('className', 'Class 10');
+formData.append('section', 'A');
+formData.append('rollNumber', 'STU010');
+formData.append('parentName', 'Mr. Ramesh Kumar');
+formData.append('parentPhone', '+919876543212');
+formData.append('profilePhoto', fileInput.files[0]); // File object
+
+axios.post('/students', formData, {
+  headers: {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'multipart/form-data'
+  }
+});
+```
+
+### Supported File Types
+
+| File Type | Max Size | Accepted Extensions | Purpose |
+|-----------|----------|-------------------|---------|
+| Images | 5 MB | JPG, PNG, GIF, WEBP | Profile photos, documents |
+| PDF | 10 MB | PDF | Certificates, documents |
+| Documents | 5 MB | DOC, DOCX, XLS, XLSX | Educational records |
+| Videos | 50 MB | MP4, MOV, AVI | Content, lectures |
+
+### Photo Upload Fields by Endpoint
+
+**Student Creation (`POST /students`):**
+- `profilePhoto` - Direct file upload
+- `profilePhotoBase64` - Base64 encoded string
+
+**Student Update (`PUT /students/:id`):**
+- `profilePhoto` - Update student's profile photo
+
+**Content Publishing (`POST /teacher/publish-content`):**
+- `file` - Course materials (PDF, images, documents)
+
+**Teacher Application (`POST /teacher/apply`):**
+- `profilePhoto` - Applicant's photo
+- `resume` - Resume/CV file
+
+### Cloudinary Storage Structure
+
+All files are organized in Cloudinary as follows:
+
+```
+school-erp/
+├── students/
+│   ├── profile/           # Student profile photos
+│   └── documents/         # Student documents
+├── teachers/
+│   ├── profile/           # Teacher profile photos
+│   └── applications/      # Application documents
+├── content/
+│   ├── notes/
+│   ├── pdfs/
+│   └── videos/
+└── general/
+    └── documents/
+```
+
+### PHP/Java/Backend Implementation Example
+
+When receiving uploaded files, the backend:
+
+1. **Validates** file type and size
+2. **Uploads** to Cloudinary with organized folder structure
+3. **Stores** URL in database for retrieval
+4. **Returns** file URL in the response
+
+**Response Example:**
+```json
+{
+  "success": true,
+  "data": {
+    "profilePhoto": "https://res.cloudinary.com/school-erp/image/upload/v1646467200/school-erp/students/profile/stu010_abc123.jpg",
+    "documentUrl": "https://res.cloudinary.com/school-erp/raw/upload/v1646467201/school-erp/students/documents/birth_cert_xyz789.pdf"
+  }
+}
+```
+
+---
+
+## Student Data Collection Form
+
+When creating a student through the admin panel, ensure the following information is collected:
+
+### Personal Information
+- [ ] Full Name (as per official documents)
+- [ ] Date of Birth (YYYY-MM-DD format)
+- [ ] Gender
+- [ ] Profile Photo (JPG/PNG)
+
+### Academic Information
+- [ ] Domain (Vedic Math / Abacus / Generic School)
+- [ ] Class/Grade Level
+- [ ] Section (A, B, C, etc.)
+- [ ] Roll Number (unique per section)
+- [ ] Previous School Name
+- [ ] Previous Marks/Percentage (with exam names and years)
+
+### Parent/Guardian Information
+- [ ] Full Name
+- [ ] Phone Number (primary contact)
+- [ ] Email Address (optional)
+- [ ] Residential Address
+
+### Documents
+- [ ] Birth Certificate (optional)
+- [ ] Transfer Certificate (optional)
+- [ ] Previous School Records (optional)
+- [ ] Address Proof (optional)
+
+---
+
+
 
 Create a `.env` file in the root directory with these variables:
 
