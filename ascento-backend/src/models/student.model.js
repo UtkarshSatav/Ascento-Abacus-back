@@ -21,6 +21,7 @@ const DocumentSchema = new mongoose.Schema(
 const StudentSchema = new mongoose.Schema(
   {
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true, index: true },
+    studentCode: { type: String, trim: true, unique: true, sparse: true, index: true },
     parentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Parent', required: true, index: true },
     fullName: { type: String, required: true, trim: true, index: true },
     dateOfBirth: { type: Date, required: true },
@@ -47,7 +48,7 @@ const StudentSchema = new mongoose.Schema(
   }
 );
 
-StudentSchema.index({ fullName: 'text', rollNumber: 'text', parentName: 'text' });
+StudentSchema.index({ studentCode: 'text', fullName: 'text', rollNumber: 'text', parentName: 'text' });
 StudentSchema.index({ domainId: 1, classId: 1, section: 1 });
 
 module.exports = mongoose.model('Student', StudentSchema);

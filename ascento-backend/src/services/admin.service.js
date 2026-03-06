@@ -10,12 +10,14 @@ const Mark = require('../models/mark.model');
 const Result = require('../models/result.model');
 const OnlineClass = require('../models/onlineClass.model');
 const TeacherApplication = require('../models/teacherApplication.model');
+const StudentAdmission = require('../models/studentAdmission.model');
 
 const teacherService = require('./teacher.service');
 const studentService = require('./student.service');
 const classService = require('./class.service');
 const subjectService = require('./subject.service');
 const teacherApplicationService = require('./teacherApplication.service');
+const studentAdmissionService = require('./studentAdmission.service');
 
 async function analytics() {
   const [
@@ -81,6 +83,7 @@ async function dashboard() {
     upcomingClasses,
     recentStudents,
     recentApplications,
+    recentAdmissions,
     recentOnlineClasses
   ] = await Promise.all([
     Student.countDocuments(),
@@ -95,6 +98,7 @@ async function dashboard() {
       .limit(10),
     Student.find().sort({ createdAt: -1 }).limit(5).select('fullName rollNumber createdAt'),
     TeacherApplication.find().sort({ createdAt: -1 }).limit(5).select('fullName status createdAt'),
+    StudentAdmission.find().sort({ createdAt: -1 }).limit(5).select('studentFullName status createdAt'),
     OnlineClass.find().sort({ createdAt: -1 }).limit(5).select('title createdAt')
   ]);
 
@@ -107,6 +111,11 @@ async function dashboard() {
     ...recentApplications.map((item) => ({
       type: 'teacher_application',
       message: `Teacher application ${item.status}: ${item.fullName}`,
+      createdAt: item.createdAt
+    })),
+    ...recentAdmissions.map((item) => ({
+      type: 'student_admission_application',
+      message: `Student admission ${item.status}: ${item.studentFullName}`,
       createdAt: item.createdAt
     })),
     ...recentOnlineClasses.map((item) => ({
@@ -165,12 +174,24 @@ async function teacherApplications(query) {
   return teacherApplicationService.listTeacherApplications(query);
 }
 
+async function studentApplications(query) {
+  return studentAdmissionService.listAdmissionApplications(query);
+}
+
 async function approveTeacherApplication(applicationId, adminUserId) {
   return teacherApplicationService.approveTeacherApplication(applicationId, adminUserId);
 }
 
+async function approveStudentApplication(applicationId, adminUserId, payload) {
+  return studentAdmissionService.approveAdmissionApplication(applicationId, adminUserId, payload);
+}
+
 async function rejectTeacherApplication(applicationId, adminUserId, remark) {
   return teacherApplicationService.rejectTeacherApplication(applicationId, adminUserId, remark);
+}
+
+async function rejectStudentApplication(applicationId, adminUserId, remark) {
+  return studentAdmissionService.rejectAdmissionApplication(applicationId, adminUserId, remark);
 }
 
 async function exportStudentsSheet() {
@@ -265,8 +286,11 @@ module.exports = {
   createSubject,
   assignTeacher,
   teacherApplications,
+  studentApplications,
   approveTeacherApplication,
+  approveStudentApplication,
   rejectTeacherApplication,
+  rejectStudentApplication,
   exportStudentsSheet,
   exportStudentReportCard
 };

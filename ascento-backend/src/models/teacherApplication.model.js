@@ -11,6 +11,7 @@ const FileSchema = new mongoose.Schema(
 
 const TeacherApplicationSchema = new mongoose.Schema(
   {
+    applicationCode: { type: String, required: true, trim: true, unique: true, index: true },
     fullName: { type: String, required: true, trim: true },
     email: { type: String, required: true, trim: true, lowercase: true, index: true },
     phone: { type: String, required: true, trim: true, index: true },
@@ -18,6 +19,13 @@ const TeacherApplicationSchema = new mongoose.Schema(
     experience: { type: Number, min: 0, default: 0 },
     subjects: [{ type: String, trim: true }],
     domainId: { type: mongoose.Schema.Types.ObjectId, ref: 'Domain', default: null, index: true },
+    specialization: { type: String, trim: true },
+    currentOrganization: { type: String, trim: true },
+    address: { type: String, trim: true },
+    coverLetter: { type: String, trim: true },
+    noticePeriodDays: { type: Number, min: 0, default: 0 },
+    expectedSalary: { type: Number, min: 0, default: null },
+    availabilityDate: { type: Date, default: null },
     resume: FileSchema,
     profilePhoto: FileSchema,
     status: {
@@ -36,6 +44,7 @@ const TeacherApplicationSchema = new mongoose.Schema(
   }
 );
 
+TeacherApplicationSchema.index({ applicationCode: 1, status: 1 });
 TeacherApplicationSchema.index({ email: 1, status: 1 });
 TeacherApplicationSchema.index({ phone: 1, status: 1 });
 

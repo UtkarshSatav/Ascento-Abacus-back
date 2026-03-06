@@ -1,9 +1,20 @@
 const TeacherApplication = require('../models/teacherApplication.model');
 const { uploadBase64 } = require('../utils/cloudinary');
 const { parsePagination } = require('../utils/pagination');
+const { generateUniquePublicId } = require('../utils/public-id');
 const teacherService = require('./teacher.service');
 
 async function applyTeacher(payload) {
+  const hasResume = Boolean(payload.resumeBase64 || (payload.resume && payload.resume.url));
+
+  if (!Number.isFinite(Number(payload.experience)) || Number(payload.experience) < 0) {
+    throw { status: 400, message: 'Teacher experience must be a valid number' };
+  }
+
+  if (!hasResume) {
+    throw { status: 400, message: 'Teacher CV or resume is required' };
+  }
+
   const duplicate = await TeacherApplication.findOne({
     $or: [{ email: payload.email.toLowerCase() }, { phone: payload.phone }],
     status: { $in: ['pending', 'approved'] }
@@ -31,7 +42,10 @@ async function applyTeacher(payload) {
     profilePhoto.publicId = upload.publicId;
   }
 
+  const applicationCode = await generateUniquePublicId('TAP', TeacherApplication, 'applicationCode');
+
   return TeacherApplication.create({
+    applicationCode,
     fullName: payload.fullName,
     email: payload.email.toLowerCase(),
     phone: payload.phone,
@@ -39,6 +53,13 @@ async function applyTeacher(payload) {
     experience: payload.experience,
     subjects: payload.subjects || [],
     domainId: payload.domainId || null,
+    specialization: payload.specialization,
+    currentOrganization: payload.currentOrganization,
+    address: payload.address,
+    coverLetter: payload.coverLetter,
+    noticePeriodDays: payload.noticePeriodDays,
+    expectedSalary: payload.expectedSalary,
+    availabilityDate: payload.availabilityDate,
     resume,
     profilePhoto,
     status: 'pending'
@@ -52,6 +73,7 @@ async function listTeacherApplications(query) {
   if (query.status) filter.status = query.status;
   if (query.search) {
     filter.$or = [
+      { applicationCode: new RegExp(query.search, 'i') },
       { fullName: new RegExp(query.search, 'i') },
       { email: new RegExp(query.search, 'i') },
       { phone: new RegExp(query.search, 'i') }
@@ -62,7 +84,7 @@ async function listTeacherApplications(query) {
     TeacherApplication.find(filter)
       .populate('domainId', 'name code')
       .populate('reviewedBy', 'fullName email')
-      .populate('createdTeacherId', 'name email')
+      .populate('createdTeacherId', 'teacherCode name email')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit),

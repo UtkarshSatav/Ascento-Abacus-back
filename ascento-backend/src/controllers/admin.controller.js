@@ -41,13 +41,36 @@ const teacherApplications = asyncHandler(async (req, res) => {
   res.json(data);
 });
 
+const studentApplications = asyncHandler(async (req, res) => {
+  const data = await adminService.studentApplications(req.query);
+  res.json(data);
+});
+
 const approveTeacher = asyncHandler(async (req, res) => {
   const data = await adminService.approveTeacherApplication(req.params.id, req.user.userId);
   res.json(data);
 });
 
+const approveStudent = asyncHandler(async (req, res) => {
+  const data = await adminService.approveStudentApplication(
+    req.params.id,
+    req.user.userId,
+    req.body
+  );
+  res.json(data);
+});
+
 const rejectTeacher = asyncHandler(async (req, res) => {
   const data = await adminService.rejectTeacherApplication(
+    req.params.id,
+    req.user.userId,
+    req.body.remark
+  );
+  res.json(data);
+});
+
+const rejectStudent = asyncHandler(async (req, res) => {
+  const data = await adminService.rejectStudentApplication(
     req.params.id,
     req.user.userId,
     req.body.remark
@@ -78,8 +101,11 @@ module.exports = {
   createSubject,
   assignTeacher,
   teacherApplications,
+  studentApplications,
   approveTeacher,
+  approveStudent,
   rejectTeacher,
+  rejectStudent,
   exportStudents,
   exportReportCard
 };

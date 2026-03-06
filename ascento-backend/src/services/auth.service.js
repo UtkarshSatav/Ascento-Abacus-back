@@ -56,8 +56,12 @@ async function adminLogin({ email, password }) {
   return issueAuthTokens(user);
 }
 
-async function teacherLogin({ email, password }) {
-  const teacher = await Teacher.findOne({ email });
+async function teacherLogin({ identifier, password }) {
+  const normalizedIdentifier = typeof identifier === 'string' ? identifier.trim() : '';
+  const normalizedEmail = normalizedIdentifier.toLowerCase();
+  const teacher = await Teacher.findOne({
+    $or: [{ email: normalizedEmail }, { teacherCode: normalizedIdentifier }]
+  });
   if (!teacher) {
     throw { status: 401, message: 'Invalid teacher credentials' };
   }
@@ -74,7 +78,9 @@ async function studentLogin({ identifier, password }) {
   let user = await User.findOne({ role: ROLES.STUDENT, username: identifier });
 
   if (!user) {
-    const student = await Student.findOne({ rollNumber: identifier });
+    const student = await Student.findOne({
+      $or: [{ rollNumber: identifier }, { studentCode: identifier }]
+    });
     if (student) {
       user = await User.findOne({ _id: student.userId, role: ROLES.STUDENT });
     }

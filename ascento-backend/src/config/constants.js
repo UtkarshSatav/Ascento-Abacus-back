@@ -29,6 +29,12 @@ const TEACHER_APPLICATION_STATUS = {
   REJECTED: 'rejected'
 };
 
+const STUDENT_APPLICATION_STATUS = {
+  PENDING: 'pending',
+  APPROVED: 'approved',
+  REJECTED: 'rejected'
+};
+
 const CONTENT_TYPES = {
   NOTES: 'notes',
   PDF: 'pdf',
@@ -43,5 +49,6 @@ module.exports = {
   EXAM_TYPES,
   ATTENDANCE_STATUS,
   TEACHER_APPLICATION_STATUS,
+  STUDENT_APPLICATION_STATUS,
   CONTENT_TYPES
 };

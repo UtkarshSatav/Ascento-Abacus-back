@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const TeacherSchema = new mongoose.Schema(
   {
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true, index: true },
+    teacherCode: { type: String, trim: true, unique: true, sparse: true, index: true },
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, trim: true, lowercase: true, unique: true, index: true },
     phone: { type: String, required: true, trim: true, unique: true, index: true },
@@ -19,6 +20,6 @@ const TeacherSchema = new mongoose.Schema(
   }
 );
 
-TeacherSchema.index({ name: 'text', email: 'text', phone: 'text' });
+TeacherSchema.index({ teacherCode: 'text', name: 'text', email: 'text', phone: 'text' });
 
 module.exports = mongoose.model('Teacher', TeacherSchema);

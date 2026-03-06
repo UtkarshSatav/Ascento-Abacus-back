@@ -4,6 +4,7 @@ const ClassModel = require('../models/class.model');
 const Student = require('../models/student.model');
 const { parsePagination } = require('../utils/pagination');
 const { randomPassword, hashPassword } = require('../utils/password');
+const { generateUniquePublicId } = require('../utils/public-id');
 const { ROLES } = require('../config/constants');
 const { ensureTeacherClassAccess } = require('./access.service');
 
@@ -14,6 +15,7 @@ async function createTeacher(payload) {
     throw { status: 409, message: 'User with same email/phone already exists' };
   }
 
+  const teacherCode = await generateUniquePublicId('TCH', Teacher, 'teacherCode');
   const rawPassword = payload.password || randomPassword(10);
   const user = await User.create({
     fullName: payload.name,
@@ -25,6 +27,7 @@ async function createTeacher(payload) {
 
   const teacher = await Teacher.create({
     userId: user._id,
+    teacherCode,
     name: payload.name,
     email,
     phone: payload.phone,
@@ -41,6 +44,7 @@ async function createTeacher(payload) {
   return {
     teacher,
     credentials: {
+      teacherId: teacherCode,
       email,
       password: rawPassword
     }
@@ -53,6 +57,7 @@ async function listTeachers(query) {
 
   if (query.search) {
     filter.$or = [
+      { teacherCode: new RegExp(query.search, 'i') },
       { name: new RegExp(query.search, 'i') },
       { email: new RegExp(query.search, 'i') },
       { phone: new RegExp(query.search, 'i') }

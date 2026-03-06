@@ -7,7 +7,10 @@ const adminLogin = asyncHandler(async (req, res) => {
 });
 
 const teacherLogin = asyncHandler(async (req, res) => {
-  const data = await authService.teacherLogin(req.body);
+  const data = await authService.teacherLogin({
+    identifier: req.body.identifier || req.body.email,
+    password: req.body.password
+  });
   res.json(data);
 });
 

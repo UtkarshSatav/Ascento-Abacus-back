@@ -4,15 +4,23 @@ const teacherApplySchema = Joi.object({
   fullName: Joi.string().trim().required(),
   email: Joi.string().email().required(),
   phone: Joi.string().min(8).max(20).required(),
-  qualification: Joi.string().allow('', null),
-  experience: Joi.number().min(0).default(0),
-  subjects: Joi.array().items(Joi.string()).default([]),
+  qualification: Joi.string().trim().required(),
+  experience: Joi.number().min(0).required(),
+  subjects: Joi.array().items(Joi.string().trim()).min(1).required(),
   domainId: objectId.allow(null),
+  specialization: Joi.string().allow('', null),
+  currentOrganization: Joi.string().trim().allow('', null),
+  address: Joi.string().trim().allow('', null),
+  coverLetter: Joi.string().trim().allow('', null),
+  noticePeriodDays: Joi.number().min(0).default(0),
+  expectedSalary: Joi.number().min(0).allow(null),
+  availabilityDate: Joi.date().allow(null),
   resume: Joi.object({ url: Joi.string().uri().required(), publicId: Joi.string().allow('', null) }).allow(null),
   profilePhoto: Joi.object({ url: Joi.string().uri().required(), publicId: Joi.string().allow('', null) }).allow(null),
   resumeBase64: Joi.string().allow('', null),
   profilePhotoBase64: Joi.string().allow('', null)
-});
+})
+  .or('resume', 'resumeBase64');
 
 const rejectApplicationSchema = Joi.object({
   remark: Joi.string().allow('', null)

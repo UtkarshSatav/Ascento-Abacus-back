@@ -11,6 +11,7 @@ const Assignment = require('../models/assignment.model');
 const { parsePagination } = require('../utils/pagination');
 const { randomPassword, hashPassword } = require('../utils/password');
 const { uploadBase64 } = require('../utils/cloudinary');
+const { generateUniquePublicId } = require('../utils/public-id');
 const { ROLES } = require('../config/constants');
 const {
   ensureStudentAccess,
@@ -103,6 +104,7 @@ async function createStudent(payload) {
 
   const usernameBase = `stu${payload.rollNumber}`;
   const username = await uniqueUsername(usernameBase);
+  const studentCode = await generateUniquePublicId('STU', Student, 'studentCode');
   const studentRawPassword = randomPassword(10);
 
   const studentUser = await User.create({
@@ -122,6 +124,7 @@ async function createStudent(payload) {
 
   const student = await Student.create({
     userId: studentUser._id,
+    studentCode,
     parentId: parent._id,
     fullName: payload.fullName,
     dateOfBirth: payload.dateOfBirth,
@@ -150,6 +153,8 @@ async function createStudent(payload) {
   return {
     student,
     studentCredentials: {
+      studentId: studentCode,
+      rollNumber: payload.rollNumber,
       username,
       password: studentRawPassword
     },
@@ -167,6 +172,7 @@ async function listStudents(query, user) {
 
   if (query.search) {
     filter.$or = [
+      { studentCode: new RegExp(query.search, 'i') },
       { fullName: new RegExp(query.search, 'i') },
       { rollNumber: new RegExp(query.search, 'i') },
       { parentName: new RegExp(query.search, 'i') }

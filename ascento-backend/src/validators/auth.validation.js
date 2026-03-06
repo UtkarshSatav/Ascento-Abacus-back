@@ -6,9 +6,10 @@ const adminLoginSchema = Joi.object({
 });
 
 const teacherLoginSchema = Joi.object({
-  email: Joi.string().email().required(),
+  email: Joi.string().email(),
+  identifier: Joi.string(),
   password: Joi.string().min(6).required()
-});
+}).or('email', 'identifier');
 
 const studentLoginSchema = Joi.object({
   identifier: Joi.string().required(),

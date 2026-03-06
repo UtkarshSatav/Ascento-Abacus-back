@@ -46,6 +46,13 @@ Students are mapped to:
 
 ---
 
+
+
+
+
+
+
+
 ## Authentication APIs
 
 ### 1. Admin Login
@@ -295,6 +302,14 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 - **401 Unauthorized**: Missing or invalid token
 
 ---
+
+
+
+
+
+
+
+
 
 ## Teacher Application APIs
 
