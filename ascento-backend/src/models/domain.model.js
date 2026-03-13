@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const { DOMAIN_CODES } = require('../config/constants');
 
 const DomainSchema = new mongoose.Schema(
   {
@@ -8,7 +7,6 @@ const DomainSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
-      enum: Object.values(DOMAIN_CODES),
       index: true
     },
     description: { type: String, trim: true }
