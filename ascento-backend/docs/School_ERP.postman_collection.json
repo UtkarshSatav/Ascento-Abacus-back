@@ -360,15 +360,10 @@
           }
         },
         {
-          "name": "POST teacher apply",
+          "name": "POST teacher apply (file upload)",
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [],
             "url": {
               "raw": "{{baseUrl}}/teacher/apply",
               "host": [
@@ -380,8 +375,23 @@
               ]
             },
             "body": {
-              "mode": "raw",
-              "raw": "{\n  \"fullName\": \"{{teacherFullName}}\",\n  \"email\": \"{{teacherEmail}}\",\n  \"phone\": \"{{teacherPhone}}\",\n  \"qualification\": \"{{teacherQualification}}\",\n  \"experience\": \"{{teacherExperience}}\",\n  \"subjects\": [\n    \"{{subjectName1}}\",\n    \"{{subjectName2}}\"\n  ],\n  \"resumeBase64\": \"{{resumeBase64}}\",\n  \"documentUploads\": [\n    {\n      \"name\": \"{{supportingDocumentName}}\",\n      \"base64\": \"{{supportingDocumentBase64}}\"\n    }\n  ]\n}"
+              "mode": "formdata",
+              "formdata": [
+                { "key": "fullName", "value": "{{teacherFullName}}", "type": "text" },
+                { "key": "email", "value": "{{teacherEmail}}", "type": "text" },
+                { "key": "phone", "value": "{{teacherPhone}}", "type": "text" },
+                { "key": "qualification", "value": "{{teacherQualification}}", "type": "text" },
+                { "key": "experience", "value": "{{teacherExperience}}", "type": "text" },
+                { "key": "subjects[0]", "value": "Math", "type": "text" },
+                { "key": "subjects[1]", "value": "Science", "type": "text" },
+                { "key": "domainId", "value": "{{domainId}}", "type": "text" },
+                { "key": "specialization", "value": "", "type": "text" },
+                { "key": "currentOrganization", "value": "{{currentOrganization}}", "type": "text" },
+                { "key": "address", "value": "{{teacherAddress}}", "type": "text" },
+                { "key": "coverLetter", "value": "{{coverLetter}}", "type": "text" },
+                { "key": "resume", "src": "/path/to/resume.pdf", "type": "file", "description": "PDF or Word document (.pdf / .doc / .docx)" },
+                { "key": "supportingDocuments", "src": "/path/to/certificate.pdf", "type": "file", "description": "Additional certificates or documents (optional, repeat key for multiple)" }
+              ]
             }
           }
         }
@@ -641,6 +651,36 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"title\": \"{{classSessionTitle}}\",\n  \"description\": \"{{classSessionDescription}}\",\n  \"domainId\": \"{{domainId}}\",\n  \"classId\": \"{{classId}}\",\n  \"subjectId\": \"{{subjectId}}\",\n  \"date\": \"{{futureDate}}\",\n  \"startTime\": \"10:00\",\n  \"endTime\": \"11:00\",\n  \"meetingLink\": \"{{meetingLink}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST teacher change-password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{teacherToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/teacher/change-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "teacher",
+                "change-password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"{{currentPassword}}\",\n  \"newPassword\": \"{{newPassword}}\"\n}"
             }
           }
         }

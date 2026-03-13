@@ -12,12 +12,15 @@ const {
   publishAnnouncementSchema
 } = require('../validators/content.validation');
 const { scheduleOnlineClassSchema } = require('../validators/onlineClass.validation');
+const { changePasswordSchema } = require('../validators/auth.validation');
 
 router.use(authenticate);
 router.use(allowRoles('teacher'));
 
 router.get('/classes', controller.classes);
 router.get('/students', controller.students);
+
+router.post('/change-password', validate(changePasswordSchema), controller.changePassword);
 
 router.post('/attendance', validate(markAttendanceSchema), controller.attendance);
 router.post('/marks', validate(createMarkSchema), controller.marks);

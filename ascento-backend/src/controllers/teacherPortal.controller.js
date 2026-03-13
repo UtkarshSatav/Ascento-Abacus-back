@@ -4,6 +4,7 @@ const markService = require('../services/mark.service');
 const assignmentService = require('../services/assignment.service');
 const contentService = require('../services/content.service');
 const onlineClassService = require('../services/onlineClass.service');
+const authService = require('../services/auth.service');
 const asyncHandler = require('../utils/async-handler');
 
 const classes = asyncHandler(async (req, res) => {
@@ -46,6 +47,11 @@ const scheduleClass = asyncHandler(async (req, res) => {
   res.status(201).json(data);
 });
 
+const changePassword = asyncHandler(async (req, res) => {
+  const data = await authService.changePassword(req.user, req.body);
+  res.json(data);
+});
+
 module.exports = {
   classes,
   students,
@@ -54,5 +60,6 @@ module.exports = {
   assignment,
   announcement,
   publishContent,
-  scheduleClass
+  scheduleClass,
+  changePassword
 };

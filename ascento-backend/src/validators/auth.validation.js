@@ -34,11 +34,17 @@ const refreshTokenSchema = Joi.object({
   refreshToken: Joi.string().required()
 });
 
+const changePasswordSchema = Joi.object({
+  currentPassword: Joi.string().min(6).required(),
+  newPassword: Joi.string().min(8).required()
+});
+
 module.exports = {
   adminLoginSchema,
   teacherLoginSchema,
   studentLoginSchema,
   parentLoginSchema,
   parentOtpRequestSchema,
-  refreshTokenSchema
+  refreshTokenSchema,
+  changePasswordSchema
 };

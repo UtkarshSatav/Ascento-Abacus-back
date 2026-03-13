@@ -4,7 +4,7 @@ const Student = require('../models/student.model');
 const Parent = require('../models/parent.model');
 const Otp = require('../models/otp.model');
 const { ROLES } = require('../config/constants');
-const { comparePassword } = require('../utils/password');
+const { comparePassword, hashPassword } = require('../utils/password');
 const { generateOtp, otpExpiry } = require('../utils/otp');
 const {
   signAccessToken,
@@ -176,6 +176,23 @@ async function currentUser(userContext) {
   return user;
 }
 
+async function changePassword(userContext, { currentPassword, newPassword }) {
+  const user = await User.findById(userContext.userId);
+  if (!user) {
+    throw { status: 404, message: 'User not found' };
+  }
+
+  const valid = await comparePassword(currentPassword, user.password);
+  if (!valid) {
+    throw { status: 401, message: 'Current password is incorrect' };
+  }
+
+  user.password = await hashPassword(newPassword);
+  await user.save();
+
+  return { message: 'Password changed successfully' };
+}
+
 module.exports = {
   adminLogin,
   teacherLogin,
@@ -183,5 +200,6 @@ module.exports = {
   requestParentOtp,
   parentLogin,
   refreshAccessToken,
-  currentUser
+  currentUser,
+  changePassword
 };

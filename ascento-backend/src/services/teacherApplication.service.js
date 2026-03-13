@@ -1,19 +1,23 @@
 const TeacherApplication = require('../models/teacherApplication.model');
-const { uploadBase64 } = require('../utils/cloudinary');
+const { uploadBase64, uploadBuffer } = require('../utils/cloudinary');
 const { parsePagination } = require('../utils/pagination');
 const { generateUniquePublicId } = require('../utils/public-id');
 const teacherService = require('./teacher.service');
 
 async function applyTeacher(payload) {
-  const hasResume = Boolean(payload.resumeBase64 || (payload.resume && payload.resume.url));
-  const uploadedDocuments = [];
+  // Check resume presence: multipart file, base64 string, or pre-uploaded URL
+  const hasResume = Boolean(
+    payload.resumeFile ||
+      payload.resumeBase64 ||
+      (payload.resume && payload.resume.url)
+  );
 
   if (!Number.isFinite(Number(payload.experience)) || Number(payload.experience) < 0) {
     throw { status: 400, message: 'Teacher experience must be a valid number' };
   }
 
   if (!hasResume) {
-    throw { status: 400, message: 'Teacher CV or resume is required' };
+    throw { status: 400, message: 'Teacher CV or resume is required (upload a PDF/DOC file)' };
   }
 
   if (!Array.isArray(payload.supportingDocuments)) {
@@ -24,6 +28,13 @@ async function applyTeacher(payload) {
     payload.documentUploads = [];
   }
 
+  if (!Array.isArray(payload.supportingDocumentFiles)) {
+    payload.supportingDocumentFiles = [];
+  }
+
+  const uploadedDocuments = [];
+
+  // Upload base64 supporting docs
   for (const item of payload.documentUploads) {
     const upload = await uploadBase64(item.base64, 'school-erp/teacher-applications/documents');
     uploadedDocuments.push({
@@ -33,10 +44,21 @@ async function applyTeacher(payload) {
     });
   }
 
-  const supportingDocuments = [...payload.supportingDocuments, ...uploadedDocuments];
-  if (!supportingDocuments.length) {
-    throw { status: 400, message: 'At least one supporting document is required' };
+  // Upload multipart supporting document files
+  for (const file of payload.supportingDocumentFiles) {
+    const upload = await uploadBuffer(
+      file.buffer,
+      'school-erp/teacher-applications/documents',
+      { public_id: file.originalname.replace(/\.[^.]+$/, '') }
+    );
+    uploadedDocuments.push({
+      name: file.originalname,
+      url: upload.url,
+      publicId: upload.publicId
+    });
   }
+
+  const supportingDocuments = [...payload.supportingDocuments, ...uploadedDocuments];
 
   const duplicate = await TeacherApplication.findOne({
     $or: [{ email: payload.email.toLowerCase() }, { phone: payload.phone }],
@@ -47,22 +69,31 @@ async function applyTeacher(payload) {
     throw { status: 409, message: 'Application already exists for this email/phone' };
   }
 
-  const resume = payload.resume || {};
-  const profilePhoto = payload.profilePhoto || {};
+  const resume = payload.resume ? { ...payload.resume } : {};
+  const profilePhoto = payload.profilePhoto ? { ...payload.profilePhoto } : {};
 
-  if (payload.resumeBase64) {
-    const upload = await uploadBase64(payload.resumeBase64, 'school-erp/teacher-applications/resume');
-    resume.url = upload.url;
-    resume.publicId = upload.publicId;
+  // Upload resume: multipart file takes priority, then base64
+  if (payload.resumeFile) {
+    const uploaded = await uploadBuffer(
+      payload.resumeFile.buffer,
+      'school-erp/teacher-applications/resume',
+      { public_id: payload.resumeFile.originalname.replace(/\.[^.]+$/, '') }
+    );
+    resume.url = uploaded.url;
+    resume.publicId = uploaded.publicId;
+  } else if (payload.resumeBase64) {
+    const uploaded = await uploadBase64(payload.resumeBase64, 'school-erp/teacher-applications/resume');
+    resume.url = uploaded.url;
+    resume.publicId = uploaded.publicId;
   }
 
   if (payload.profilePhotoBase64) {
-    const upload = await uploadBase64(
+    const uploaded = await uploadBase64(
       payload.profilePhotoBase64,
       'school-erp/teacher-applications/profile'
     );
-    profilePhoto.url = upload.url;
-    profilePhoto.publicId = upload.publicId;
+    profilePhoto.url = uploaded.url;
+    profilePhoto.publicId = uploaded.publicId;
   }
 
   const applicationCode = await generateUniquePublicId('TAP', TeacherApplication, 'applicationCode');

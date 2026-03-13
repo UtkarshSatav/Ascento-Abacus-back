@@ -34,7 +34,30 @@ async function uploadBase64(base64Data, folder = 'school-erp') {
   };
 }
 
+async function uploadBuffer(buffer, folder = 'school-erp', options = {}) {
+  if (!isCloudinaryConfigured()) {
+    throw { status: 500, message: 'Cloudinary is not configured' };
+  }
+
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder, resource_type: 'raw', ...options },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve({
+          url: result.secure_url,
+          publicId: result.public_id,
+          format: result.format,
+          bytes: result.bytes
+        });
+      }
+    );
+    stream.end(buffer);
+  });
+}
+
 module.exports = {
   isCloudinaryConfigured,
-  uploadBase64
+  uploadBase64,
+  uploadBuffer
 };

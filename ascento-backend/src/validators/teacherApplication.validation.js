@@ -15,6 +15,7 @@ const teacherApplySchema = Joi.object({
   noticePeriodDays: Joi.number().min(0).default(0),
   expectedSalary: Joi.number().min(0).allow(null),
   availabilityDate: Joi.date().allow(null),
+  // JSON body fallbacks (still supported alongside file upload)
   resume: Joi.object({ url: Joi.string().uri().required(), publicId: Joi.string().allow('', null) }).allow(null),
   supportingDocuments: Joi.array()
     .items(
@@ -36,20 +37,8 @@ const teacherApplySchema = Joi.object({
     )
     .default([]),
   profilePhotoBase64: Joi.string().allow('', null)
-})
-  .or('resume', 'resumeBase64')
-  .custom((value, helpers) => {
-    const docCount = (value.supportingDocuments?.length || 0) + (value.documentUploads?.length || 0);
-    if (docCount < 1) {
-      return helpers.error('any.custom', {
-        message: 'At least one supporting document is required'
-      });
-    }
-    return value;
-  }, 'supporting documents validation')
-  .messages({
-    'any.custom': '{{#message}}'
-  });
+});
+// Note: resume presence is validated in the service so multipart file uploads are also accepted
 
 const rejectApplicationSchema = Joi.object({
   remark: Joi.string().allow('', null)
