@@ -1,20 +1,33 @@
+'use strict';
+
 const mongoose = require('mongoose');
+const auditFieldsPlugin = require('./plugins/auditFields.plugin');
 
-const DomainSchema = new mongoose.Schema(
-  {
-    name: { type: String, required: true, trim: true, unique: true },
-    code: {
-      type: String,
-      required: true,
-      unique: true,
-      index: true
-    },
-    description: { type: String, trim: true }
+const domainSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: [true, 'Domain name is required'],
+    trim: true,
   },
-  {
-    timestamps: true,
-    collection: 'domains'
-  }
-);
+  code: {
+    type: String,
+    required: [true, 'Domain code is required'],
+    unique: true,
+    uppercase: true,
+    trim: true,
+  },
+  description: {
+    type: String,
+    trim: true,
+    default: '',
+  },
+  status: {
+    type: String,
+    enum: ['active', 'inactive'],
+    default: 'active',
+  },
+});
 
-module.exports = mongoose.model('Domain', DomainSchema);
+domainSchema.plugin(auditFieldsPlugin);
+
+module.exports = mongoose.models.Domain || mongoose.model('Domain', domainSchema);

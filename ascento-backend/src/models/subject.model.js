@@ -1,19 +1,34 @@
+'use strict';
+
 const mongoose = require('mongoose');
+const auditFieldsPlugin = require('./plugins/auditFields.plugin');
 
-const SubjectSchema = new mongoose.Schema(
-  {
-    domainId: { type: mongoose.Schema.Types.ObjectId, ref: 'Domain', required: true, index: true },
-    classId: { type: mongoose.Schema.Types.ObjectId, ref: 'Class', required: true, index: true },
-    name: { type: String, required: true, trim: true },
-    code: { type: String, trim: true },
-    teacherId: { type: mongoose.Schema.Types.ObjectId, ref: 'Teacher', default: null }
+const subjectSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: [true, 'Subject name is required'],
+    trim: true,
   },
-  {
-    timestamps: true,
-    collection: 'subjects'
-  }
-);
+  code: {
+    type: String,
+    required: [true, 'Subject code is required'],
+    trim: true,
+    uppercase: true,
+  },
+  classId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Class',
+    required: [true, 'classId is required'],
+    index: true,
+  },
+  description: {
+    type: String,
+    trim: true,
+    default: '',
+  },
+});
 
-SubjectSchema.index({ classId: 1, name: 1 }, { unique: true });
+subjectSchema.plugin(auditFieldsPlugin);
+subjectSchema.index({ name: 1, classId: 1 }, { unique: true });
 
-module.exports = mongoose.model('Subject', SubjectSchema);
+module.exports = mongoose.models.Subject || mongoose.model('Subject', subjectSchema);

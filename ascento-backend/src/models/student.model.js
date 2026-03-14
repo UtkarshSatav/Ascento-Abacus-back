@@ -1,54 +1,133 @@
+'use strict';
+
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
+const env = require('../config/env');
+const auditFieldsPlugin = require('./plugins/auditFields.plugin');
 
-const PreviousMarkSchema = new mongoose.Schema(
-  {
-    examName: { type: String, trim: true },
-    percentage: { type: Number },
-    year: { type: Number }
-  },
-  { _id: false }
-);
+const generateRollNumber = () => {
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const suffix = crypto.randomBytes(2).toString('hex').toUpperCase();
+  return `STU-${timestamp}-${suffix}`;
+};
 
-const DocumentSchema = new mongoose.Schema(
-  {
-    name: { type: String, required: true, trim: true },
-    url: { type: String, required: true, trim: true },
-    publicId: { type: String, trim: true }
+const studentSchema = new mongoose.Schema({
+  fullName: {
+    type: String,
+    required: [true, 'fullName is required'],
+    trim: true,
   },
-  { _id: false }
-);
+  password: {
+    type: String,
+    required: [true, 'Password is required'],
+    minlength: [6, 'Password must be at least 6 characters'],
+    select: false,
+  },
+  role: {
+    type: String,
+    default: 'student',
+    immutable: true,
+    enum: ['student'],
+  },
+  dateOfBirth: {
+    type: Date,
+    required: [true, 'dateOfBirth is required'],
+  },
+  gender: {
+    type: String,
+    required: [true, 'gender is required'],
+    enum: ['male', 'female', 'other'],
+  },
+  parentName: {
+    type: String,
+    required: [true, 'parentName is required'],
+    trim: true,
+  },
+  parentPhone: {
+    type: String,
+    required: [true, 'parentPhone is required'],
+    trim: true,
+  },
+  parentEmail: {
+    type: String,
+    required: [true, 'parentEmail is required'],
+    lowercase: true,
+    trim: true,
+  },
+  domainId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Domain',
+    required: [true, 'domainId is required'],
+    index: true,
+  },
+  rollNumber: {
+    type: String,
+    required: true,
+    unique: true,
+    default: generateRollNumber,
+    trim: true,
+  },
+  address: {
+    type: String,
+    trim: true,
+  },
+  city: {
+    type: String,
+    trim: true,
+  },
+  state: {
+    type: String,
+    trim: true,
+  },
+  bloodGroup: {
+    type: String,
+    trim: true,
+  },
+  profilePhoto: {
+    type: String,
+  },
+  sessionKey: {
+    type: String,
+    default: null,
+    trim: true,
+  },
+  isPasswordTemporary: {
+    type: Boolean,
+    default: false,
+  },
+  status: {
+    type: String,
+    enum: ['active', 'inactive'],
+    default: 'active',
+  },
+});
 
-const StudentSchema = new mongoose.Schema(
-  {
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true, index: true },
-    studentCode: { type: String, trim: true, unique: true, sparse: true, index: true },
-    parentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Parent', required: true, index: true },
-    fullName: { type: String, required: true, trim: true, index: true },
-    dateOfBirth: { type: Date, required: true },
-    gender: { type: String, enum: ['male', 'female', 'other'], required: true },
-    domainId: { type: mongoose.Schema.Types.ObjectId, ref: 'Domain', required: true, index: true },
-    classId: { type: mongoose.Schema.Types.ObjectId, ref: 'Class', required: true, index: true },
-    className: { type: String, required: true, trim: true },
-    section: { type: String, required: true, trim: true },
-    rollNumber: { type: String, required: true, trim: true, unique: true, index: true },
-    parentName: { type: String, required: true, trim: true },
-    parentPhone: { type: String, required: true, trim: true, index: true },
-    parentEmail: { type: String, trim: true, lowercase: true },
-    address: { type: String, trim: true },
-    admissionDate: { type: Date, default: Date.now },
-    previousSchool: { type: String, trim: true },
-    previousMarks: [PreviousMarkSchema],
-    documents: [DocumentSchema],
-    profilePhoto: { type: String, trim: true },
-    improvementNotes: { type: String, trim: true }
-  },
-  {
-    timestamps: true,
-    collection: 'students'
+studentSchema.plugin(auditFieldsPlugin);
+
+studentSchema.virtual('isActive').get(function () {
+  return this.status === 'active';
+});
+
+studentSchema.set('toJSON', { virtuals: true });
+studentSchema.set('toObject', { virtuals: true });
+
+studentSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) return next();
+  this.password = await bcrypt.hash(this.password, env.BCRYPT_SALT_ROUNDS);
+  next();
+});
+
+studentSchema.pre('findOneAndUpdate', async function (next) {
+  const update = this.getUpdate();
+  if (update && update.password) {
+    update.password = await bcrypt.hash(update.password, env.BCRYPT_SALT_ROUNDS);
   }
-);
+  next();
+});
 
-StudentSchema.index({ studentCode: 'text', fullName: 'text', rollNumber: 'text', parentName: 'text' });
-StudentSchema.index({ domainId: 1, classId: 1, section: 1 });
+studentSchema.methods.comparePassword = function (candidatePassword) {
+  return bcrypt.compare(candidatePassword, this.password);
+};
 
-module.exports = mongoose.model('Student', StudentSchema);
+module.exports = mongoose.models.Student || mongoose.model('Student', studentSchema);

@@ -1,24 +1,53 @@
+'use strict';
+
 const mongoose = require('mongoose');
+const { randomUUID } = require('crypto');
+const auditFieldsPlugin = require('./plugins/auditFields.plugin');
 
-const NotificationSchema = new mongoose.Schema(
-  {
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-    studentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Student', default: null, index: true },
-    onlineClassId: { type: mongoose.Schema.Types.ObjectId, ref: 'OnlineClass', default: null, index: true },
-    type: { type: String, required: true, index: true },
-    channel: { type: String, enum: ['push', 'email'], required: true },
-    title: { type: String, required: true, trim: true },
-    message: { type: String, required: true, trim: true },
-    reminderMinutes: { type: Number, default: null },
-    status: { type: String, enum: ['queued', 'sent', 'failed'], default: 'queued', index: true },
-    sentAt: { type: Date, default: null }
+const notificationSchema = new mongoose.Schema({
+  notificationId: {
+    type: String,
+    default: () => `NOTIF-${Date.now().toString(36)}-${randomUUID().slice(0, 8)}`,
+    unique: true,
+    index: true,
+    immutable: true,
   },
-  {
-    timestamps: true,
-    collection: 'notifications'
-  }
-);
+  title: {
+    type: String,
+    required: [true, 'title is required'],
+    trim: true,
+  },
+  message: {
+    type: String,
+    required: [true, 'message is required'],
+    trim: true,
+  },
+  targetType: {
+    type: String,
+    enum: ['student', 'teacher', 'class', 'broadcast'],
+    required: [true, 'targetType is required'],
+    index: true,
+  },
+  targetId: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: null,
+    index: true,
+  },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Admin',
+    required: [true, 'createdBy is required'],
+    index: true,
+  },
+  status: {
+    type: String,
+    enum: ['active', 'inactive'],
+    default: 'active',
+    index: true,
+  },
+});
 
-NotificationSchema.index({ userId: 1, onlineClassId: 1, reminderMinutes: 1, channel: 1 }, { unique: true, sparse: true });
+notificationSchema.plugin(auditFieldsPlugin);
+notificationSchema.index({ targetType: 1, targetId: 1, createdAt: -1 });
 
-module.exports = mongoose.model('Notification', NotificationSchema);
+module.exports = mongoose.models.Notification || mongoose.model('Notification', notificationSchema);

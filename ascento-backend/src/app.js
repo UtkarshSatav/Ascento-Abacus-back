@@ -1,55 +1,54 @@
-require('dotenv').config();
+'use strict';
 
 const express = require('express');
 const helmet = require('helmet');
+const compression = require('compression');
 const cors = require('cors');
-const rateLimit = require('express-rate-limit');
 const morgan = require('morgan');
 
+const logger = require('./utils/logger');
+const rateLimiter = require('./middleware/rateLimiter');
+const errorHandler = require('./middleware/errorHandler');
+const AppError = require('./core/AppError');
 const routes = require('./routes');
-const errorHandler = require('./middlewares/error.middleware');
-const { swaggerSpec, swaggerHtml } = require('./config/swagger');
 
 const app = express();
 
+// ─── Security headers ────────────────────────────────────────────────────────
 app.use(helmet());
-app.use(cors());
+
+// ─── CORS ────────────────────────────────────────────────────────────────────
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN || '*',
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+  }),
+);
+
+// ─── Compression ─────────────────────────────────────────────────────────────
+app.use(compression());
+
+// ─── Rate limiting ───────────────────────────────────────────────────────────
+app.use(rateLimiter);
+
+// ─── HTTP request logging (Morgan → Winston) ─────────────────────────────────
+app.use(morgan('combined', { stream: logger.stream }));
+
+// ─── Body parsers ────────────────────────────────────────────────────────────
 app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
-app.use(morgan('combined'));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-const limiter = rateLimit({
-  windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
-  max: Number(process.env.RATE_LIMIT_MAX) || 200,
-  standardHeaders: true,
-  legacyHeaders: false
+// ─── Routes ──────────────────────────────────────────────────────────────────
+app.use('/api', routes);
+
+// ─── 404 handler ─────────────────────────────────────────────────────────────
+app.all('*', (req, res, next) => {
+  next(new AppError(`Route not found: ${req.method} ${req.originalUrl}`, 404));
 });
 
-app.use(limiter);
-
-app.get('/', (req, res) => {
-  res.json({
-    service: 'School ERP Backend API',
-    version: '2.0.0',
-    docs: '/docs',
-    health: '/health'
-  });
-});
-
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
-app.get('/docs', (req, res) => {
-  res.setHeader('Content-Type', 'text/html');
-  res.send(swaggerHtml());
-});
-
-app.get('/docs.json', (req, res) => {
-  res.json(swaggerSpec());
-});
-
-app.use('/', routes);
+// ─── Central error handler (must be last) ────────────────────────────────────
 app.use(errorHandler);
 
 module.exports = app;

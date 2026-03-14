@@ -1,23 +1,104 @@
-const router = require('express').Router();
+'use strict';
 
-router.use('/auth', require('./auth.routes'));
+const express = require('express');
+const authRoutes = require('../auth/auth.routes');
+const academicYearPublicRoutes = require('../modules/academic-year/academic-year.public.routes');
+const teacherAttendanceRoutes = require('../modules/attendance/teacher.routes');
+const classExamRoutes = require('../modules/exam/exam.class.routes');
+const studentExamRoutes = require('../modules/exam/exam.student.routes');
+const enquiryPublicRoutes = require('../modules/enquiry/enquiry.public.routes');
+const eventRoutes = require('../modules/event/event.routes');
+const studentFeeRoutes = require('../modules/fee/student.routes');
+const studentHomeworkRoutes = require('../modules/homework/student.routes');
+const studentMarksRoutes = require('../modules/marks/student.routes');
+const classMeetingRoutes = require('../modules/meeting/class.routes');
+const notificationRoutes = require('../modules/notification/notification.routes');
+const classReportCardRoutes = require('../modules/report-card/class.routes');
+const reminderRoutes = require('../modules/reminder/reminder.routes');
+const studentReportCardRoutes = require('../modules/report-card/student.routes');
+const teacherMeetingRoutes = require('../modules/meeting/teacher.routes');
+const teacherMarksRoutes = require('../modules/marks/teacher.routes');
+const teacherHomeworkRoutes = require('../modules/homework/teacher.routes');
+const { authRouter: adminAuthRoutes, adminRouter: adminRoutes } = require('../modules/admin/admin.routes');
+const studentSelfRoutes = require('../modules/student-enrollment/student.self.routes');
+const teacherSelfRoutes = require('../modules/teacher/teacher.self.routes');
 
-router.use('/admission', require('./admission.routes'));
-router.use('/teacher', require('./teacher-application.routes'));
-router.use('/teacher', require('./teacher.routes'));
-router.use('/student', require('./student.routes'));
-router.use('/parent', require('./parent.routes'));
+const router = express.Router();
 
-router.use('/domains', require('./domains.routes'));
-router.use('/classes', require('./classes.routes'));
-router.use('/subjects', require('./subjects.routes'));
-router.use('/teachers', require('./teachers.routes'));
-router.use('/students', require('./students.routes'));
-router.use('/attendance', require('./attendance.routes'));
-router.use('/exams', require('./exams.routes'));
-router.use('/marks', require('./marks.routes'));
-router.use('/results', require('./results.routes'));
-router.use('/assignments', require('./assignments.routes'));
-router.use('/admin', require('./admin.routes'));
+// Health check — no auth required
+router.get('/health', (req, res) => {
+  res.json({
+    success: true,
+    status: 200,
+    message: 'Server is up and running',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Generic auth (login with role, /me, logout-all)
+router.use('/auth', authRoutes);
+
+// Website enquiry API → POST /api/enquiry
+router.use('/', enquiryPublicRoutes);
+
+// Reminder API → GET /api/reminders
+router.use('/', reminderRoutes);
+
+// Notification API → GET /api/notifications
+router.use('/', notificationRoutes);
+
+// Event API → GET /api/events
+router.use('/', eventRoutes);
+
+// Public academic year API → GET /api/academic-years/active
+router.use('/academic-years', academicYearPublicRoutes);
+
+// Admin auth  → POST /api/auth/admin/login | POST /api/auth/admin/logout
+router.use('/auth/admin', adminAuthRoutes);
+
+// Admin API   → GET  /api/admin/profile | PUT /api/admin/change-password
+router.use('/admin', adminRoutes);
+
+// Teacher self-service API → POST /api/teachers/change-password
+router.use('/teachers', teacherSelfRoutes);
+
+// Teacher attendance API → POST /api/teacher/attendance
+router.use('/teacher', teacherAttendanceRoutes);
+
+// Teacher homework API → POST /api/teacher/homework
+router.use('/teacher', teacherHomeworkRoutes);
+
+// Teacher marks API → POST/PUT/GET /api/teacher/marks
+router.use('/teacher', teacherMarksRoutes);
+
+// Teacher meetings API → POST/GET /api/teacher/meetings
+router.use('/teacher', teacherMeetingRoutes);
+
+// Class exams API → GET /api/class/exams/:classId
+router.use('/class', classExamRoutes);
+
+// Class report cards API → GET /api/class/report-cards/:classId
+router.use('/class', classReportCardRoutes);
+
+// Class meetings API → GET /api/class/meetings/:classId
+router.use('/class', classMeetingRoutes);
+
+// Student self-service API → GET /api/student/current-class
+router.use('/student', studentSelfRoutes);
+
+// Student homework API → GET /api/student/homework
+router.use('/student', studentHomeworkRoutes);
+
+// Student exams API → GET /api/student/exams
+router.use('/student', studentExamRoutes);
+
+// Student marks API → GET /api/student/marks
+router.use('/student', studentMarksRoutes);
+
+// Student report card API → GET /api/student/report-card
+router.use('/student', studentReportCardRoutes);
+
+// Student fee API → GET /api/student/fees
+router.use('/student', studentFeeRoutes);
 
 module.exports = router;

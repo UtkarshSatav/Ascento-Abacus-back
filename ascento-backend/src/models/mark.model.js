@@ -1,20 +1,46 @@
+'use strict';
+
 const mongoose = require('mongoose');
+const auditFieldsPlugin = require('./plugins/auditFields.plugin');
 
-const MarkSchema = new mongoose.Schema(
-  {
-    examId: { type: mongoose.Schema.Types.ObjectId, ref: 'Exam', required: true, index: true },
-    studentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Student', required: true, index: true },
-    subjectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Subject', required: true, index: true },
-    obtainedMarks: { type: Number, required: true, min: 0 },
-    totalMarks: { type: Number, required: true, min: 1 },
-    enteredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Teacher', default: null }
+const markSchema = new mongoose.Schema({
+  studentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Student',
+    required: [true, 'studentId is required'],
+    index: true,
   },
-  {
-    timestamps: true,
-    collection: 'marks'
-  }
-);
+  examId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Exam',
+    required: [true, 'examId is required'],
+    index: true,
+  },
+  subjectId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Subject',
+    required: [true, 'subjectId is required'],
+    index: true,
+  },
+  marksObtained: {
+    type: Number,
+    required: [true, 'marksObtained is required'],
+    min: [0, 'marksObtained cannot be negative'],
+  },
+  remarks: {
+    type: String,
+    trim: true,
+    default: '',
+  },
+  enteredByTeacherId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Teacher',
+    required: [true, 'enteredByTeacherId is required'],
+    index: true,
+  },
+});
 
-MarkSchema.index({ examId: 1, studentId: 1, subjectId: 1 }, { unique: true });
+markSchema.plugin(auditFieldsPlugin);
+markSchema.index({ studentId: 1, examId: 1, subjectId: 1 }, { unique: true });
 
-module.exports = mongoose.model('Mark', MarkSchema);
+module.exports = mongoose.models.Mark || mongoose.model('Mark', markSchema);

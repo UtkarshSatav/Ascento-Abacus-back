@@ -1,7 +1,8 @@
-.env
+node_modules
 node_modules/
-ALL_APIS.md
-ALL_APIS_ROUTES.md
-API_TEST_COMPLETE.md
-docs/
-APPLICATION_WORKFLOW_API.md
+logs
+logs/
+.env
+.env.*
+*.log
+.DS_Store

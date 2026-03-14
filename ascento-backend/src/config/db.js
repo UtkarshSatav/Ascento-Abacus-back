@@ -1,15 +1,14 @@
+'use strict';
+
 const mongoose = require('mongoose');
 const logger = require('../utils/logger');
+const env = require('./env');
 
-async function connectDB(mongoUri) {
-  try {
-    mongoose.set('strictQuery', true);
-    await mongoose.connect(mongoUri);
-    logger.info('MongoDB connected');
-  } catch (error) {
-    logger.error('MongoDB connection failed', error);
-    throw error;
-  }
-}
+const connectDB = async () => {
+  const conn = await mongoose.connect(env.MONGO_URI, {
+    serverSelectionTimeoutMS: 10000,
+  });
+  logger.info(`MongoDB connected: ${conn.connection.host}`);
+};
 
 module.exports = connectDB;

@@ -1,12 +1,36 @@
+'use strict';
+
 const mongoose = require('mongoose');
+const auditFieldsPlugin = require('./plugins/auditFields.plugin');
 
-const EventSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  description: { type: String },
-  startDate: { type: Date, required: true },
-  endDate: { type: Date },
-  audience: { type: String, enum: ['all', 'class', 'section', 'roles'], default: 'all' },
-  target: { type: mongoose.Schema.Types.Mixed }
-}, { timestamps: true });
+const eventSchema = new mongoose.Schema({
+  title: {
+    type: String,
+    required: [true, 'title is required'],
+    trim: true,
+  },
+  description: {
+    type: String,
+    trim: true,
+    default: '',
+  },
+  eventDate: {
+    type: Date,
+    required: [true, 'eventDate is required'],
+    index: true,
+  },
+  location: {
+    type: String,
+    trim: true,
+    default: '',
+  },
+  attachments: {
+    type: [String],
+    default: [],
+  },
+});
 
-module.exports = mongoose.model('Event', EventSchema);
+eventSchema.plugin(auditFieldsPlugin);
+eventSchema.index({ eventDate: 1, title: 1 });
+
+module.exports = mongoose.models.Event || mongoose.model('Event', eventSchema);

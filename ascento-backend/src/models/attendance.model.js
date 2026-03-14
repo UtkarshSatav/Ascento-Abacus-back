@@ -1,22 +1,45 @@
+'use strict';
+
 const mongoose = require('mongoose');
-const { ATTENDANCE_STATUS } = require('../config/constants');
+const auditFieldsPlugin = require('./plugins/auditFields.plugin');
 
-const AttendanceSchema = new mongoose.Schema(
-  {
-    date: { type: Date, required: true, index: true },
-    classId: { type: mongoose.Schema.Types.ObjectId, ref: 'Class', required: true, index: true },
-    studentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Student', required: true, index: true },
-    status: { type: String, enum: Object.values(ATTENDANCE_STATUS), required: true },
-    markedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Teacher', default: null },
-    note: { type: String, trim: true }
+const attendanceSchema = new mongoose.Schema({
+  studentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Student',
+    required: [true, 'studentId is required'],
+    index: true,
   },
-  {
-    timestamps: true,
-    collection: 'attendance'
-  }
-);
+  classId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Class',
+    required: [true, 'classId is required'],
+    index: true,
+  },
+  sectionId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Section',
+    required: [true, 'sectionId is required'],
+    index: true,
+  },
+  academicYear: {
+    type: String,
+    required: [true, 'academicYear is required'],
+    trim: true,
+  },
+  date: {
+    type: Date,
+    required: [true, 'date is required'],
+    index: true,
+  },
+  status: {
+    type: String,
+    enum: ['present', 'absent', 'late'],
+    required: [true, 'status is required'],
+  },
+});
 
-AttendanceSchema.index({ studentId: 1, date: 1 }, { unique: true });
-AttendanceSchema.index({ classId: 1, date: 1 });
+attendanceSchema.plugin(auditFieldsPlugin);
+attendanceSchema.index({ studentId: 1, date: 1 }, { unique: true });
 
-module.exports = mongoose.model('Attendance', AttendanceSchema);
+module.exports = mongoose.models.Attendance || mongoose.model('Attendance', attendanceSchema);
