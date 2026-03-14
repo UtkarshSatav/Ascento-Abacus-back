@@ -10,7 +10,7 @@ dotenv.config();
 const env = {
   NODE_ENV: process.env.NODE_ENV || 'development',
   PORT: parseInt(process.env.PORT, 10) || 4000,
-  MONGO_URI: process.env.MONGO_URI,
+  MONGO_URI: process.env.MONGO_URI || process.env.MONGODB_URI,
   JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET,
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
   ACCESS_TOKEN_EXPIRES: process.env.ACCESS_TOKEN_EXPIRES || '15m',
@@ -35,6 +35,9 @@ const required = [
 
 required.forEach((key) => {
   if (!env[key]) {
+    if (key === 'MONGO_URI') {
+      throw new Error('Missing required environment variable: MONGO_URI (or MONGODB_URI).');
+    }
     throw new Error(`Missing required environment variable: ${key}`);
   }
 });
