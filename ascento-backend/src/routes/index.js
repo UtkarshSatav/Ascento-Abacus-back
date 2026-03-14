@@ -16,9 +16,12 @@ const notificationRoutes = require('../modules/notification/notification.routes'
 const classReportCardRoutes = require('../modules/report-card/class.routes');
 const reminderRoutes = require('../modules/reminder/reminder.routes');
 const studentReportCardRoutes = require('../modules/report-card/student.routes');
+const classTimetableRoutes = require('../modules/timetable/class.routes');
+const studentTimetableRoutes = require('../modules/timetable/student.routes');
 const teacherMeetingRoutes = require('../modules/meeting/teacher.routes');
 const teacherMarksRoutes = require('../modules/marks/teacher.routes');
 const teacherHomeworkRoutes = require('../modules/homework/teacher.routes');
+const teacherTimetableRoutes = require('../modules/timetable/teacher.routes');
 const { authRouter: adminAuthRoutes, adminRouter: adminRoutes } = require('../modules/admin/admin.routes');
 const studentSelfRoutes = require('../modules/student-enrollment/student.self.routes');
 const teacherSelfRoutes = require('../modules/teacher/teacher.self.routes');
@@ -74,6 +77,9 @@ router.use('/teacher', teacherMarksRoutes);
 // Teacher meetings API → POST/GET /api/teacher/meetings
 router.use('/teacher', teacherMeetingRoutes);
 
+// Teacher timetable API → GET /api/teacher/timetable
+router.use('/teacher', teacherTimetableRoutes);
+
 // Class exams API → GET /api/class/exams/:classId
 router.use('/class', classExamRoutes);
 
@@ -82,6 +88,9 @@ router.use('/class', classReportCardRoutes);
 
 // Class meetings API → GET /api/class/meetings/:classId
 router.use('/class', classMeetingRoutes);
+
+// Class timetable API → GET /api/class/timetable/:classId
+router.use('/class', classTimetableRoutes);
 
 // Student self-service API → GET /api/student/current-class
 router.use('/student', studentSelfRoutes);
@@ -100,5 +109,8 @@ router.use('/student', studentReportCardRoutes);
 
 // Student fee API → GET /api/student/fees
 router.use('/student', studentFeeRoutes);
+
+// Student timetable API → GET /api/student/timetable
+router.use('/student', studentTimetableRoutes);
 
 module.exports = router;

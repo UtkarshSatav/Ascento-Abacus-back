@@ -20,7 +20,9 @@ const sectionRoutes = require('../section/section.routes');
 const attendanceController = require('../attendance/attendance.controller');
 const studentEnrollmentController = require('../student-enrollment/student-enrollment.controller');
 const studentEnrollmentRoutes = require('../student-enrollment/student-enrollment.routes');
+const studentRoutes = require('../student/student.routes');
 const subjectRoutes = require('../subject/subject.routes');
+const timetableController = require('../timetable/timetable.controller');
 const teacherAssignmentController = require('../teacher-assignment/teacher-assignment.controller');
 const teacherAssignmentRoutes = require('../teacher-assignment/teacher-assignment.routes');
 const teacherRoutes = require('../teacher/teacher.routes');
@@ -86,6 +88,14 @@ adminRouter.post('/assign-teacher', teacherAssignmentController.create);
 
 // Teacher assignments → GET /api/admin/teacher-assignments | PUT/DELETE by id
 adminRouter.use('/teacher-assignments', teacherAssignmentRoutes);
+
+// Student management → /api/admin/students
+adminRouter.use('/students', studentRoutes);
+
+// Timetable management → POST /api/admin/timetable | PUT/DELETE by id
+adminRouter.post('/timetable', timetableController.create);
+adminRouter.put('/timetable/:id', timetableController.update);
+adminRouter.delete('/timetable/:id', timetableController.remove);
 
 // Student enrollments → POST /api/admin/enroll-student
 adminRouter.post('/enroll-student', studentEnrollmentController.create);
