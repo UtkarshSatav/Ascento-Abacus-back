@@ -12,6 +12,7 @@
     { "key": "domainId", "value": "" },
     { "key": "suffix", "value": "{{$timestamp}}" },
     { "key": "studentId", "value": "" },
+    { "key": "studentUserId", "value": "" },
     { "key": "studentLoginEmail", "value": "" },
     { "key": "studentTempPassword", "value": "" },
     { "key": "studentNewPassword", "value": "Student@123" },
@@ -73,6 +74,7 @@
             "exec": [
               "const json = pm.response.json();",
               "pm.collectionVariables.set('studentId', json.data.student._id || json.data.student.id);",
+              "pm.collectionVariables.set('studentUserId', json.data.student.userId);",
               "pm.collectionVariables.set('studentLoginEmail', json.data.studentLoginEmail);",
               "pm.collectionVariables.set('studentTempPassword', json.data.temporaryPassword);"
             ]
@@ -112,7 +114,7 @@
         "url": "{{baseUrl}}/auth/login",
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"identifier\": \"{{studentLoginEmail}}\",\n  \"password\": \"{{studentTempPassword}}\",\n  \"role\": \"student\"\n}"
+          "raw": "{\n  \"identifier\": \"{{studentUserId}}\",\n  \"password\": \"{{studentTempPassword}}\",\n  \"role\": \"student\"\n}"
         }
       }
     },
@@ -151,7 +153,7 @@
         "url": "{{baseUrl}}/auth/login",
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"identifier\": \"{{studentLoginEmail}}\",\n  \"password\": \"{{studentNewPassword}}\",\n  \"role\": \"student\"\n}"
+          "raw": "{\n  \"identifier\": \"{{studentUserId}}\",\n  \"password\": \"{{studentNewPassword}}\",\n  \"role\": \"student\"\n}"
         }
       }
     },

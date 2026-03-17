@@ -56,6 +56,7 @@ const buildLoginQuery = (role, identifier) => {
     return {
       $or: [
         { parentEmail: normalized },
+        { userId: identifier.trim() },
         { email: normalized },
       ],
     };
