@@ -132,11 +132,15 @@ studentSchema.set('toJSON', { virtuals: true });
 studentSchema.set('toObject', { virtuals: true });
 
 
-// Set roll number before saving if not set
-studentSchema.pre('save', async function (next) {
-  if (!this.rollNumber) {
+// Set roll number before validation so required validator passes.
+studentSchema.pre('validate', async function (next) {
+  if (this.isNew && !this.rollNumber) {
     this.rollNumber = await generateRollNumber.call(this);
   }
+  next();
+});
+
+studentSchema.pre('save', async function (next) {
   if (this.isModified('password')) {
     this.password = await bcrypt.hash(this.password, env.BCRYPT_SALT_ROUNDS);
   }

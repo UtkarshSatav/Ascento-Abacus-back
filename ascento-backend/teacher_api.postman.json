@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Teacher API Collection",
-    "description": "Teacher onboarding and first-login password change flow",
+    "description": "Teacher onboarding, first-login password change, and complete teacher API flow with real payload fields",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -16,7 +16,16 @@
     { "key": "teacherEmail", "value": "" },
     { "key": "teacherTempPassword", "value": "" },
     { "key": "teacherNewPassword", "value": "Teacher@123" },
-    { "key": "teacherSessionKey", "value": "" }
+    { "key": "teacherSessionKey", "value": "" },
+    { "key": "academicYearId", "value": "" },
+    { "key": "academicYear", "value": "" },
+    { "key": "classId", "value": "" },
+    { "key": "sectionId", "value": "" },
+    { "key": "subjectId", "value": "" },
+    { "key": "studentId", "value": "" },
+    { "key": "examId", "value": "" },
+    { "key": "markId", "value": "" },
+    { "key": "contentId", "value": "" }
   ],
   "item": [
     {
@@ -44,7 +53,30 @@
       }
     },
     {
-      "name": "02 Create Teacher By Admin",
+      "name": "02 Get Domain (for teacher creation)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "const domains = json?.data?.data || [];",
+              "if (domains.length) pm.collectionVariables.set('domainId', domains[0]._id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {"key": "x-session-key", "value": "{{adminSessionKey}}"}
+        ],
+        "url": "{{baseUrl}}/admin/domains?limit=1"
+      }
+    },
+    {
+      "name": "03 Create Teacher By Admin",
       "event": [
         {
           "listen": "test",
@@ -55,7 +87,8 @@
               "pm.collectionVariables.set('teacherId', json.data.teacher._id);",
               "pm.collectionVariables.set('teacherUserId', json.data.teacher.userId);",
               "pm.collectionVariables.set('teacherEmail', json.data.teacherEmail);",
-              "pm.collectionVariables.set('teacherTempPassword', json.data.temporaryPassword);"
+              "pm.collectionVariables.set('teacherTempPassword', json.data.temporaryPassword);",
+              "pm.collectionVariables.set('teacherSessionKey', json.data.sessionKey);"
             ]
           }
         }
@@ -74,7 +107,119 @@
       }
     },
     {
-      "name": "03 Teacher Login With Temporary Password (userId)",
+      "name": "04 Get Active Academic Year",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "pm.collectionVariables.set('academicYearId', json.data._id);",
+              "pm.collectionVariables.set('academicYear', json.data.name);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {"key": "x-session-key", "value": "{{adminSessionKey}}"}
+        ],
+        "url": "{{baseUrl}}/academic-years/active"
+      }
+    },
+    {
+      "name": "05 Get Active Enrollment (student/class/section)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "const rows = json?.data?.data || [];",
+              "if (rows.length) {",
+              "  pm.collectionVariables.set('studentId', rows[0].studentId?._id || rows[0].studentId);",
+              "  pm.collectionVariables.set('classId', rows[0].classId?._id || rows[0].classId);",
+              "  pm.collectionVariables.set('sectionId', rows[0].sectionId?._id || rows[0].sectionId);",
+              "  pm.collectionVariables.set('academicYear', rows[0].academicYear || pm.collectionVariables.get('academicYear'));",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {"key": "x-session-key", "value": "{{adminSessionKey}}"}
+        ],
+        "url": "{{baseUrl}}/admin/enrollments?status=active&limit=1"
+      }
+    },
+    {
+      "name": "06 Get Subject By Class",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "const subjects = json?.data?.data || [];",
+              "if (subjects.length) pm.collectionVariables.set('subjectId', subjects[0]._id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {"key": "x-session-key", "value": "{{adminSessionKey}}"}
+        ],
+        "url": "{{baseUrl}}/admin/subjects?classId={{classId}}&limit=1"
+      }
+    },
+    {
+      "name": "07 Assign Teacher (required for teacher APIs)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "x-session-key", "value": "{{adminSessionKey}}"},
+          {"key": "Content-Type", "value": "application/json"}
+        ],
+        "url": "{{baseUrl}}/admin/assign-teacher",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"teacherId\": \"{{teacherId}}\",\n  \"classId\": \"{{classId}}\",\n  \"sectionId\": \"{{sectionId}}\",\n  \"subjectId\": \"{{subjectId}}\",\n  \"academicYear\": \"{{academicYear}}\",\n  \"status\": \"active\"\n}"
+        }
+      }
+    },
+    {
+      "name": "08 Get Exam By Class",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "const exams = json?.data || [];",
+              "if (Array.isArray(exams) && exams.length) pm.collectionVariables.set('examId', exams[0]._id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {"key": "x-session-key", "value": "{{adminSessionKey}}"}
+        ],
+        "url": "{{baseUrl}}/class/exams/{{classId}}?academicYearId={{academicYearId}}"
+      }
+    },
+    {
+      "name": "09 Teacher Login With Temporary Password (userId)",
       "event": [
         {
           "listen": "test",
@@ -98,7 +243,7 @@
       }
     },
     {
-      "name": "04 Change Password (first login)",
+      "name": "10 Change Password (first login)",
       "request": {
         "method": "POST",
         "header": [{"key": "x-session-key", "value": "{{teacherSessionKey}}"}, {"key": "Content-Type", "value": "application/json"}],
@@ -110,7 +255,19 @@
       }
     },
     {
-      "name": "05 Teacher Login With Permanent Password (email)",
+      "name": "11 Teacher Login With Permanent Password (email)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "pm.collectionVariables.set('teacherSessionKey', json.data.sessionKey);"
+            ]
+          }
+        }
+      ],
       "request": {
         "method": "POST",
         "header": [{"key": "Content-Type", "value": "application/json"}],
@@ -122,186 +279,167 @@
       }
     },
     {
-      "name": "Dashboard",
+      "name": "12 Teacher Dashboard",
       "request": {
         "method": "GET",
-        "header": [{"key": "x-session-key", "value": "{{sessionKey}}"}],
-        "url": {
-          "raw": "https://ascento-abacus.onrender.com/api/teacher/dashboard",
-          "protocol": "https",
-          "host": ["ascento-abacus","onrender","com"],
-          "path": ["api","teacher","dashboard"]
-        }
+        "header": [{"key": "x-session-key", "value": "{{teacherSessionKey}}"}],
+        "url": "{{baseUrl}}/teacher/dashboard"
       }
     },
     {
-      "name": "Mark Attendance",
-      "request": {
-        "method": "POST",
-        "header": [{"key": "x-session-key", "value": "{{sessionKey}}"}, {"key": "Content-Type", "value": "application/json"}],
-        "url": {
-          "raw": "https://ascento-abacus.onrender.com/api/teacher/attendance",
-          "protocol": "https",
-          "host": ["ascento-abacus","onrender","com"],
-          "path": ["api","teacher","attendance"]
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"class\": \"5A\",\n  \"date\": \"2026-03-17\",\n  \"students\": [\n    {\"name\": \"John Doe\", \"status\": \"present\"},\n    {\"name\": \"Jane Doe\", \"status\": \"absent\"}\n  ]\n}"
-        }
-      }
-    },
-    {
-      "name": "Get Attendance",
+      "name": "13 Teacher Timetable",
       "request": {
         "method": "GET",
-        "header": [{"key": "x-session-key", "value": "{{sessionKey}}"}],
-        "url": {
-          "raw": "https://ascento-abacus.onrender.com/api/teacher/attendance?class=5A&date=2026-03-17",
-          "protocol": "https",
-          "host": ["ascento-abacus","onrender","com"],
-          "path": ["api","teacher","attendance"],
-          "query": [
-            {"key": "class", "value": "5A"},
-            {"key": "date", "value": "2026-03-17"}
-          ]
-        }
+        "header": [{"key": "x-session-key", "value": "{{teacherSessionKey}}"}],
+        "url": "{{baseUrl}}/teacher/timetable?academicYearId={{academicYearId}}"
       }
     },
     {
-      "name": "Create Assignment",
+      "name": "14 Mark Attendance",
       "request": {
         "method": "POST",
-        "header": [{"key": "x-session-key", "value": "{{sessionKey}}"}, {"key": "Content-Type", "value": "application/json"}],
-        "url": {
-          "raw": "https://ascento-abacus.onrender.com/api/teacher/homework",
-          "protocol": "https",
-          "host": ["ascento-abacus","onrender","com"],
-          "path": ["api","teacher","homework"]
-        },
+        "header": [{"key": "x-session-key", "value": "{{teacherSessionKey}}"}, {"key": "Content-Type", "value": "application/json"}],
+        "url": "{{baseUrl}}/teacher/attendance",
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"title\": \"Math Homework\",\n  \"description\": \"Solve algebra problems\",\n  \"dueDate\": \"2026-03-20\",\n  \"class\": \"5A\"\n}"
+          "raw": "{\n  \"studentId\": \"{{studentId}}\",\n  \"classId\": \"{{classId}}\",\n  \"sectionId\": \"{{sectionId}}\",\n  \"academicYear\": \"{{academicYear}}\",\n  \"date\": \"2026-03-17\",\n  \"status\": \"present\"\n}"
         }
       }
     },
     {
-      "name": "Update Assignment",
+      "name": "15 Create Homework",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "x-session-key", "value": "{{teacherSessionKey}}"}, {"key": "Content-Type", "value": "application/json"}],
+        "url": "{{baseUrl}}/teacher/homework",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Algebra Practice Set 1\",\n  \"description\": \"Solve all linear equation questions from worksheet 3.\",\n  \"classId\": \"{{classId}}\",\n  \"sectionId\": \"{{sectionId}}\",\n  \"subjectId\": \"{{subjectId}}\",\n  \"dueDate\": \"2026-03-20\",\n  \"attachments\": [\n    \"https://res.cloudinary.com/demo/raw/upload/v1/homework/algebra-practice-set-1.pdf\"\n  ]\n}"
+        }
+      }
+    },
+    {
+      "name": "16 Create Marks",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "if (json?.data?._id) pm.collectionVariables.set('markId', json.data._id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "x-session-key", "value": "{{teacherSessionKey}}"}, {"key": "Content-Type", "value": "application/json"}],
+        "url": "{{baseUrl}}/teacher/marks",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"studentId\": \"{{studentId}}\",\n  \"examId\": \"{{examId}}\",\n  \"subjectId\": \"{{subjectId}}\",\n  \"marksObtained\": 74,\n  \"remarks\": \"Good conceptual clarity and neat work.\"\n}"
+        }
+      }
+    },
+    {
+      "name": "17 Update Marks",
       "request": {
         "method": "PUT",
-        "header": [{"key": "x-session-key", "value": "{{sessionKey}}"}, {"key": "Content-Type", "value": "application/json"}],
-        "url": {
-          "raw": "https://ascento-abacus.onrender.com/api/teacher/homework/assignmentId",
-          "protocol": "https",
-          "host": ["ascento-abacus","onrender","com"],
-          "path": ["api","teacher","homework","assignmentId"]
-        },
+        "header": [{"key": "x-session-key", "value": "{{teacherSessionKey}}"}, {"key": "Content-Type", "value": "application/json"}],
+        "url": "{{baseUrl}}/teacher/marks/{{markId}}",
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"title\": \"Updated Homework\",\n  \"description\": \"New description\"\n}"
+          "raw": "{\n  \"marksObtained\": 78,\n  \"remarks\": \"Updated after re-evaluation.\"\n}"
         }
       }
     },
     {
-      "name": "Delete Assignment",
-      "request": {
-        "method": "DELETE",
-        "header": [{"key": "x-session-key", "value": "{{sessionKey}}"}],
-        "url": {
-          "raw": "https://ascento-abacus.onrender.com/api/teacher/homework/assignmentId",
-          "protocol": "https",
-          "host": ["ascento-abacus","onrender","com"],
-          "path": ["api","teacher","homework","assignmentId"]
-        }
-      }
-    },
-    {
-      "name": "Get Assignments",
+      "name": "18 Get Marks By Exam",
       "request": {
         "method": "GET",
-        "header": [{"key": "x-session-key", "value": "{{sessionKey}}"}],
-        "url": {
-          "raw": "https://ascento-abacus.onrender.com/api/teacher/homework?class=5A",
-          "protocol": "https",
-          "host": ["ascento-abacus","onrender","com"],
-          "path": ["api","teacher","homework"],
-          "query": [
-            {"key": "class", "value": "5A"}
-          ]
-        }
+        "header": [{"key": "x-session-key", "value": "{{teacherSessionKey}}"}],
+        "url": "{{baseUrl}}/teacher/marks/{{examId}}"
       }
     },
     {
-      "name": "Create Content",
+      "name": "19 Create Meeting",
       "request": {
         "method": "POST",
-        "header": [{"key": "x-session-key", "value": "{{sessionKey}}"}, {"key": "Content-Type", "value": "application/json"}],
-        "url": {
-          "raw": "https://ascento-abacus.onrender.com/api/teacher/content",
-          "protocol": "https",
-          "host": ["ascento-abacus","onrender","com"],
-          "path": ["api","teacher","content"]
-        },
+        "header": [{"key": "x-session-key", "value": "{{teacherSessionKey}}"}, {"key": "Content-Type", "value": "application/json"}],
+        "url": "{{baseUrl}}/teacher/meetings",
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"title\": \"Math Notes\",\n  \"description\": \"Algebra basics\",\n  \"type\": \"note\",\n  \"classId\": \"classObjectId\",\n  \"studentId\": \"studentObjectId\",\n  \"visibleTo\": [\"studentObjectId\"]\n}"
+          "raw": "{\n  \"title\": \"Class 8A Algebra Live Session\",\n  \"classId\": \"{{classId}}\",\n  \"sectionId\": \"{{sectionId}}\",\n  \"subjectId\": \"{{subjectId}}\",\n  \"meetingLink\": \"https://meet.google.com/abc-defg-hij\",\n  \"meetingDate\": \"2026-03-18\",\n  \"startTime\": \"10:00\",\n  \"endTime\": \"10:45\",\n  \"description\": \"Revision class before unit test.\"\n}"
         }
       }
     },
     {
-      "name": "Update Content",
+      "name": "20 Get Meetings",
+      "request": {
+        "method": "GET",
+        "header": [{"key": "x-session-key", "value": "{{teacherSessionKey}}"}],
+        "url": "{{baseUrl}}/teacher/meetings?classId={{classId}}&sectionId={{sectionId}}&subjectId={{subjectId}}"
+      }
+    },
+    {
+      "name": "21 Create Content",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "if (json?.data?._id) pm.collectionVariables.set('contentId', json.data._id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "x-session-key", "value": "{{teacherSessionKey}}"}, {"key": "Content-Type", "value": "application/json"}],
+        "url": "{{baseUrl}}/teacher/content",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Linear Equations Notes\",\n  \"description\": \"Concept notes and solved examples for chapter 3.\",\n  \"type\": \"note\",\n  \"classId\": \"{{classId}}\",\n  \"studentId\": \"{{studentId}}\",\n  \"visibleTo\": [\"{{studentId}}\"]\n}"
+        }
+      }
+    },
+    {
+      "name": "22 Update Content",
       "request": {
         "method": "PUT",
-        "header": [{"key": "x-session-key", "value": "{{sessionKey}}"}, {"key": "Content-Type", "value": "application/json"}],
-        "url": {
-          "raw": "https://ascento-abacus.onrender.com/api/teacher/content/contentId",
-          "protocol": "https",
-          "host": ["ascento-abacus","onrender","com"],
-          "path": ["api","teacher","content","contentId"]
-        },
+        "header": [{"key": "x-session-key", "value": "{{teacherSessionKey}}"}, {"key": "Content-Type", "value": "application/json"}],
+        "url": "{{baseUrl}}/teacher/content/{{contentId}}",
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"title\": \"Updated Notes\",\n  \"description\": \"Updated description\"\n}"
+          "raw": "{\n  \"title\": \"Linear Equations Notes - Updated\",\n  \"description\": \"Added solved word problems and summary sheet.\"\n}"
         }
       }
     },
     {
-      "name": "Delete Content",
+      "name": "23 Get All Content",
+      "request": {
+        "method": "GET",
+        "header": [{"key": "x-session-key", "value": "{{teacherSessionKey}}"}],
+        "url": "{{baseUrl}}/teacher/content"
+      }
+    },
+    {
+      "name": "24 Get Content for Student",
+      "request": {
+        "method": "GET",
+        "header": [{"key": "x-session-key", "value": "{{teacherSessionKey}}"}],
+        "url": "{{baseUrl}}/teacher/content/{{studentId}}"
+      }
+    },
+    {
+      "name": "25 Delete Content",
       "request": {
         "method": "DELETE",
-        "header": [{"key": "x-session-key", "value": "{{sessionKey}}"}],
-        "url": {
-          "raw": "https://ascento-abacus.onrender.com/api/teacher/content/contentId",
-          "protocol": "https",
-          "host": ["ascento-abacus","onrender","com"],
-          "path": ["api","teacher","content","contentId"]
-        }
-      }
-    },
-    {
-      "name": "Get All Content",
-      "request": {
-        "method": "GET",
-        "header": [{"key": "x-session-key", "value": "{{sessionKey}}"}],
-        "url": {
-          "raw": "https://ascento-abacus.onrender.com/api/teacher/content",
-          "protocol": "https",
-          "host": ["ascento-abacus","onrender","com"],
-          "path": ["api","teacher","content"]
-        }
-      }
-    },
-    {
-      "name": "Get Content for Student",
-      "request": {
-        "method": "GET",
-        "header": [{"key": "x-session-key", "value": "{{sessionKey}}"}],
-        "url": {
-          "raw": "https://ascento-abacus.onrender.com/api/teacher/content/studentObjectId",
-          "protocol": "https",
-          "host": ["ascento-abacus","onrender","com"],
-          "path": ["api","teacher","content","studentObjectId"]
-        }
+        "header": [{"key": "x-session-key", "value": "{{teacherSessionKey}}"}],
+        "url": "{{baseUrl}}/teacher/content/{{contentId}}"
       }
     }
   ]
