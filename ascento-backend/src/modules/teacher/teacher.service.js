@@ -32,14 +32,26 @@ const create = async (data, adminId) => {
   await ensureDomainExists(data.domainId);
 
   const temporaryPassword = generateTemporaryPassword();
-  const teacher = await Teacher.create({
-    ...data,
-    password: temporaryPassword,
-    mustChangePassword: true,
-    isPasswordTemporary: true,
-    createdBy: adminId,
-    updatedBy: adminId,
-  });
+  let teacher;
+  try {
+    teacher = await Teacher.create({
+      ...data,
+      password: temporaryPassword,
+      mustChangePassword: true,
+      isPasswordTemporary: true,
+      createdBy: adminId,
+      updatedBy: adminId,
+    });
+  } catch (err) {
+    if (err.code === 11000 && err.keyPattern && err.keyPattern.email) {
+      throw new AppError('A teacher with this email already exists.', 409);
+    }
+    throw err;
+  }
+
+  if (!teacher || !teacher._id) {
+    throw new AppError('Teacher creation failed.', 500);
+  }
 
   // Create a session for the new teacher
   const sessionKey = crypto.randomBytes(32).toString('hex');
