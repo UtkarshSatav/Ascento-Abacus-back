@@ -46,6 +46,9 @@ const create = async (data, adminId) => {
     if (err.code === 11000 && err.keyPattern && err.keyPattern.email) {
       throw new AppError('A teacher with this email already exists.', 409);
     }
+    if (err.code === 11000 && err.keyPattern && err.keyPattern.userId) {
+      throw new AppError('A teacher with this userId already exists.', 409);
+    }
     throw err;
   }
 
@@ -53,10 +56,10 @@ const create = async (data, adminId) => {
     throw new AppError('Teacher creation failed.', 500);
   }
 
-  // Create a session for the new teacher
+  // Create a session for the new teacher using userId
   const sessionKey = crypto.randomBytes(32).toString('hex');
   await Session.create({
-    userId: teacher._id,
+    userId: teacher.userId,
     userModel: 'Teacher',
     sessionKey,
     role: 'teacher',
