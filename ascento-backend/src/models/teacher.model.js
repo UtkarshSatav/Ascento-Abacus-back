@@ -11,6 +11,7 @@ const teacherSchema = new mongoose.Schema({
     required: true,
     unique: true,
     index: true,
+    default: function () { return undefined; }, // allow pre-save hook to generate
   },
   name: {
     type: String,
