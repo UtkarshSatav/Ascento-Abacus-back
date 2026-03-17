@@ -113,7 +113,12 @@ router.use('/student', studentReportCardRoutes);
 // Student fee API → GET /api/student/fees
 router.use('/student', studentFeeRoutes);
 
-// Student timetable API → GET /api/student/timetable
+
+// Student timetable API  GET /api/student/timetable
 router.use('/student', studentTimetableRoutes);
+
+// Student dashboard API  GET /api/student/dashboard
+const studentDashboardRoutes = require('../modules/dashboard/student.routes');
+router.use('/student', studentDashboardRoutes);
 
 module.exports = router;

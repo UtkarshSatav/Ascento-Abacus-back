@@ -126,3 +126,18 @@ teacherSchema.methods.comparePassword = function (candidatePassword) {
 };
 
 module.exports = mongoose.models.Teacher || mongoose.model('Teacher', teacherSchema);
+// Role-based update method
+teacherSchema.methods.updateFieldsByRole = function (data, role) {
+  const teacherFields = [
+    'name', 'phone', 'address', 'city', 'state', 'country', 'profilePhoto'
+  ];
+  const adminFields = [
+    ...teacherFields,
+    'email', 'gender', 'dateOfBirth', 'qualification', 'experienceYears', 'joiningDate',
+    'domainId', 'status', 'role', 'sessionKey', 'mustChangePassword', 'isPasswordTemporary'
+  ];
+  const allowedFields = role === 'admin' ? adminFields : teacherFields;
+  for (const key of allowedFields) {
+    if (data[key] !== undefined) this[key] = data[key];
+  }
+};
