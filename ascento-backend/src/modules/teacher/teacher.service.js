@@ -22,6 +22,22 @@ const generateTemporaryPassword = () => {
   return `Teach@${crypto.randomBytes(4).toString('hex')}`;
 };
 
+const generateTeacherUserId = async () => {
+  const year = new Date().getFullYear();
+  const prefix = `TEA-${year}-`;
+
+  const latest = await Teacher.findOne({ userId: { $regex: `^${prefix}` } })
+    .select('userId')
+    .sort({ userId: -1 })
+    .lean();
+
+  const latestSeq = latest && latest.userId
+    ? Number(latest.userId.split('-').pop()) || 0
+    : 0;
+
+  return `${prefix}${String(latestSeq + 1).padStart(4, '0')}`;
+};
+
 const sanitiseTeacher = (teacher) => {
   const obj = teacher.toObject ? teacher.toObject() : { ...teacher };
   delete obj.password;
@@ -33,23 +49,32 @@ const create = async (data, adminId) => {
 
   const temporaryPassword = generateTemporaryPassword();
   let teacher;
-  try {
-    teacher = await Teacher.create({
-      ...data,
-      password: temporaryPassword,
-      mustChangePassword: true,
-      isPasswordTemporary: true,
-      createdBy: adminId,
-      updatedBy: adminId,
-    });
-  } catch (err) {
-    if (err.code === 11000 && err.keyPattern && err.keyPattern.email) {
-      throw new AppError('A teacher with this email already exists.', 409);
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const userId = await generateTeacherUserId();
+
+    try {
+      teacher = await Teacher.create({
+        ...data,
+        userId,
+        password: temporaryPassword,
+        mustChangePassword: true,
+        isPasswordTemporary: true,
+        createdBy: adminId,
+        updatedBy: adminId,
+      });
+      break;
+    } catch (err) {
+      if (err.code === 11000 && err.keyPattern && err.keyPattern.userId && attempt < 2) {
+        continue;
+      }
+      if (err.code === 11000 && err.keyPattern && err.keyPattern.email) {
+        throw new AppError('A teacher with this email already exists.', 409);
+      }
+      if (err.code === 11000 && err.keyPattern && err.keyPattern.userId) {
+        throw new AppError('Failed to generate unique teacher userId. Please retry.', 409);
+      }
+      throw err;
     }
-    if (err.code === 11000 && err.keyPattern && err.keyPattern.userId) {
-      throw new AppError('A teacher with this userId already exists.', 409);
-    }
-    throw err;
   }
 
   if (!teacher || !teacher._id) {
@@ -59,7 +84,7 @@ const create = async (data, adminId) => {
   // Create a session for the new teacher using userId
   const sessionKey = crypto.randomBytes(32).toString('hex');
   await Session.create({
-    userId: teacher.userId,
+    userId: teacher._id,
     userModel: 'Teacher',
     sessionKey,
     role: 'teacher',

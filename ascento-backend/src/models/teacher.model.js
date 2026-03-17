@@ -8,9 +8,10 @@ const auditFieldsPlugin = require('./plugins/auditFields.plugin');
 const teacherSchema = new mongoose.Schema({
   userId: {
     type: String,
+    required: [true, 'userId is required'],
     unique: true,
     index: true,
-    default: function () { return undefined; }, // allow pre-save hook to generate
+    trim: true,
   },
   name: {
     type: String,
@@ -114,20 +115,6 @@ teacherSchema.set('toJSON', { virtuals: true });
 teacherSchema.set('toObject', { virtuals: true });
 
 teacherSchema.pre('save', async function (next) {
-  // Generate userId if not set
-  if (!this.userId) {
-    // Example: TEA-YYYY-XXXX (increment per year)
-    const year = new Date().getFullYear();
-    const Teacher = mongoose.models.Teacher || mongoose.model('Teacher');
-    const count = await Teacher.countDocuments({
-      createdAt: {
-        $gte: new Date(`${year}-01-01T00:00:00.000Z`),
-        $lte: new Date(`${year}-12-31T23:59:59.999Z`)
-      }
-    });
-    const nextNum = (count + 1).toString().padStart(4, '0');
-    this.userId = `TEA-${year}-${nextNum}`;
-  }
   if (this.isModified('password')) {
     this.password = await bcrypt.hash(this.password, env.BCRYPT_SALT_ROUNDS);
   }
