@@ -1,249 +1,239 @@
 {
   "info": {
     "name": "Ascento Student API Collection",
-    "description": "Postman collection for student app APIs using https://ascento-abacus.onrender.com",
+    "description": "Student onboarding and student app APIs with first-login password change flow",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
+  "variable": [
+    { "key": "baseUrl", "value": "https://ascento-abacus-backend.onrender.com/api" },
+    { "key": "adminEmail", "value": "admin@school.com" },
+    { "key": "adminPassword", "value": "admin@123" },
+    { "key": "adminSessionKey", "value": "" },
+    { "key": "domainId", "value": "" },
+    { "key": "suffix", "value": "{{$timestamp}}" },
+    { "key": "studentId", "value": "" },
+    { "key": "studentLoginEmail", "value": "" },
+    { "key": "studentTempPassword", "value": "" },
+    { "key": "studentNewPassword", "value": "Student@123" },
+    { "key": "studentSessionKey", "value": "" }
+  ],
   "item": [
     {
-      "name": "Create Student",
-      "request": {
-        "method": "POST",
-        "header": [
-          { "key": "Content-Type", "value": "application/json" },
-          { "key": "x-session-key", "value": "{{sessionKey}}" }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"fullName\": \"Test Student {{suffix}}\",\n  \"parentName\": \"Test Parent\",\n  \"parentPhone\": \"9999999999\",\n  \"parentEmail\": \"test.student.{{suffix}}@school.com\",\n  \"domainId\": \"{{domainId}}\",\n  \"gender\": \"male\",\n  \"dateOfBirth\": \"2012-01-01\",\n  \"address\": \"123 Test Lane\",\n  \"city\": \"Test City\",\n  \"state\": \"Test State\",\n  \"bloodGroup\": \"O+\"\n}"
-        },
-        "url": {
-          "raw": "{{baseUrl}}/admin/students",
-          "host": ["{{baseUrl}}"],
-          "path": ["admin","students"]
-        }
-      },
+      "name": "01 Admin Login",
       "event": [
         {
           "listen": "test",
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test('Student created', function () { pm.response.to.have.status(201); });",
               "const json = pm.response.json();",
-              "pm.collectionVariables.set('studentId', json.data.student.id);",
-              "pm.collectionVariables.set('studentLoginEmail', json.data.student.parentEmail);",
-              "pm.collectionVariables.set('studentLoginPassword', json.data.temporaryPassword);"
+              "pm.collectionVariables.set('adminSessionKey', json.data.sessionKey);"
             ]
           }
         }
-      ]
-    },
-    {
-      "name": "Student Login",
+      ],
       "request": {
         "method": "POST",
-        "header": [
-          { "key": "Content-Type", "value": "application/json" }
-        ],
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/auth/admin/login",
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"email\": \"{{studentLoginEmail}}\",\n  \"password\": \"{{studentLoginPassword}}\",\n  \"role\": \"student\"\n}"
-        },
-        "url": {
-          "raw": "{{baseUrl}}/auth/login",
-          "host": ["{{baseUrl}}"],
-          "path": ["auth","login"]
+          "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
         }
-      },
+      }
+    },
+    {
+      "name": "02 Get Domain",
       "event": [
         {
           "listen": "test",
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test('Student login success', function () { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "const domains = json?.data?.data || [];",
+              "if (domains.length) pm.collectionVariables.set('domainId', domains[0]._id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "x-session-key", "value": "{{adminSessionKey}}" }],
+        "url": "{{baseUrl}}/admin/domains?limit=1"
+      }
+    },
+    {
+      "name": "03 Create Student By Admin",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "pm.collectionVariables.set('studentId', json.data.student._id || json.data.student.id);",
+              "pm.collectionVariables.set('studentLoginEmail', json.data.studentLoginEmail);",
+              "pm.collectionVariables.set('studentTempPassword', json.data.temporaryPassword);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "x-session-key", "value": "{{adminSessionKey}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{baseUrl}}/admin/students",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fullName\": \"Test Student {{suffix}}\",\n  \"parentName\": \"Test Parent\",\n  \"parentPhone\": \"9999999999\",\n  \"parentEmail\": \"test.student.{{suffix}}@school.com\",\n  \"domainId\": \"{{domainId}}\",\n  \"gender\": \"male\",\n  \"dateOfBirth\": \"2012-01-01\",\n  \"address\": \"123 Test Lane\",\n  \"city\": \"Bhopal\",\n  \"state\": \"Madhya Pradesh\",\n  \"bloodGroup\": \"O+\"\n}"
+        }
+      }
+    },
+    {
+      "name": "04 Student Login With Temporary Password",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
               "const json = pm.response.json();",
               "pm.collectionVariables.set('studentSessionKey', json.data.sessionKey);"
             ]
           }
         }
-      ]
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"identifier\": \"{{studentLoginEmail}}\",\n  \"password\": \"{{studentTempPassword}}\",\n  \"role\": \"student\"\n}"
+        }
+      }
     },
     {
-      "name": "Login",
+      "name": "05 Student Change Password (first login)",
       "request": {
         "method": "POST",
         "header": [
+          { "key": "x-session-key", "value": "{{studentSessionKey}}" },
           { "key": "Content-Type", "value": "application/json" }
         ],
+        "url": "{{baseUrl}}/student/change-password",
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"email\": \"student1@example.com\",\n  \"password\": \"Student@123\",\n  \"role\": \"student\"\n}"
-        },
-        "url": {
-          "raw": "https://ascento-abacus.onrender.com/api/auth/login",
-          "protocol": "https",
-          "host": ["ascento-abacus","onrender","com"],
-          "path": ["api","auth","login"]
+          "raw": "{\n  \"currentPassword\": \"{{studentTempPassword}}\",\n  \"newPassword\": \"{{studentNewPassword}}\"\n}"
         }
       }
     },
     {
-      "name": "Me",
+      "name": "06 Student Login With New Password",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "pm.collectionVariables.set('studentSessionKey', json.data.sessionKey);"
+            ]
+          }
+        }
+      ],
       "request": {
-        "method": "GET",
-        "header": [
-          { "key": "x-session-key", "value": "{{sessionKey}}" }
-        ],
-        "url": {
-          "raw": "https://ascento-abacus.onrender.com/api/auth/me",
-          "protocol": "https",
-          "host": ["ascento-abacus","onrender","com"],
-          "path": ["api","auth","me"]
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"identifier\": \"{{studentLoginEmail}}\",\n  \"password\": \"{{studentNewPassword}}\",\n  \"role\": \"student\"\n}"
         }
       }
     },
     {
-      "name": "Dashboard",
+      "name": "07 Auth Me",
       "request": {
         "method": "GET",
-        "header": [
-          { "key": "x-session-key", "value": "{{sessionKey}}" }
-        ],
-        "url": {
-          "raw": "https://ascento-abacus.onrender.com/api/student/dashboard",
-          "protocol": "https",
-          "host": ["ascento-abacus","onrender","com"],
-          "path": ["api","student","dashboard"]
-        }
+        "header": [{ "key": "x-session-key", "value": "{{studentSessionKey}}" }],
+        "url": "{{baseUrl}}/auth/me"
       }
     },
     {
-      "name": "Homework List",
+      "name": "08 Current Class",
       "request": {
         "method": "GET",
-        "header": [
-          { "key": "x-session-key", "value": "{{sessionKey}}" }
-        ],
-        "url": {
-          "raw": "https://ascento-abacus.onrender.com/api/student/homework",
-          "protocol": "https",
-          "host": ["ascento-abacus","onrender","com"],
-          "path": ["api","student","homework"]
-        }
+        "header": [{ "key": "x-session-key", "value": "{{studentSessionKey}}" }],
+        "url": "{{baseUrl}}/student/current-class"
       }
     },
     {
-      "name": "Homework Detail",
+      "name": "09 Attendance",
       "request": {
         "method": "GET",
-        "header": [
-          { "key": "x-session-key", "value": "{{sessionKey}}" }
-        ],
-        "url": {
-          "raw": "https://ascento-abacus.onrender.com/api/student/homework/12345",
-          "protocol": "https",
-          "host": ["ascento-abacus","onrender","com"],
-          "path": ["api","student","homework","12345"]
-        }
+        "header": [{ "key": "x-session-key", "value": "{{studentSessionKey}}" }],
+        "url": "{{baseUrl}}/student/attendance"
       }
     },
     {
-      "name": "Attendance",
+      "name": "10 Dashboard",
       "request": {
         "method": "GET",
-        "header": [
-          { "key": "x-session-key", "value": "{{sessionKey}}" }
-        ],
-        "url": {
-          "raw": "https://ascento-abacus.onrender.com/api/student/attendance",
-          "protocol": "https",
-          "host": ["ascento-abacus","onrender","com"],
-          "path": ["api","student","attendance"]
-        }
+        "header": [{ "key": "x-session-key", "value": "{{studentSessionKey}}" }],
+        "url": "{{baseUrl}}/student/dashboard"
       }
     },
     {
-      "name": "Fees",
+      "name": "11 Homework",
       "request": {
         "method": "GET",
-        "header": [
-          { "key": "x-session-key", "value": "{{sessionKey}}" }
-        ],
-        "url": {
-          "raw": "https://ascento-abacus.onrender.com/api/student/fees",
-          "protocol": "https",
-          "host": ["ascento-abacus","onrender","com"],
-          "path": ["api","student","fees"]
-        }
+        "header": [{ "key": "x-session-key", "value": "{{studentSessionKey}}" }],
+        "url": "{{baseUrl}}/student/homework"
       }
     },
     {
-      "name": "Timetable Daily",
+      "name": "12 Exams",
       "request": {
         "method": "GET",
-        "header": [
-          { "key": "x-session-key", "value": "{{sessionKey}}" }
-        ],
-        "url": {
-          "raw": "https://ascento-abacus.onrender.com/api/student/timetable?dayOfWeek=monday",
-          "protocol": "https",
-          "host": ["ascento-abacus","onrender","com"],
-          "path": ["api","student","timetable"],
-          "query": [
-            { "key": "dayOfWeek", "value": "monday" }
-          ]
-        }
+        "header": [{ "key": "x-session-key", "value": "{{studentSessionKey}}" }],
+        "url": "{{baseUrl}}/student/exams"
       }
     },
     {
-      "name": "Timetable Weekly",
+      "name": "13 Marks",
       "request": {
         "method": "GET",
-        "header": [
-          { "key": "x-session-key", "value": "{{sessionKey}}" }
-        ],
-        "url": {
-          "raw": "https://ascento-abacus.onrender.com/api/student/timetable",
-          "protocol": "https",
-          "host": ["ascento-abacus","onrender","com"],
-          "path": ["api","student","timetable"]
-        }
+        "header": [{ "key": "x-session-key", "value": "{{studentSessionKey}}" }],
+        "url": "{{baseUrl}}/student/marks"
       }
     },
     {
-      "name": "Exams",
+      "name": "14 Report Card",
       "request": {
         "method": "GET",
-        "header": [
-          { "key": "x-session-key", "value": "{{sessionKey}}" }
-        ],
-        "url": {
-          "raw": "https://ascento-abacus.onrender.com/api/student/exams",
-          "protocol": "https",
-          "host": ["ascento-abacus","onrender","com"],
-          "path": ["api","student","exams"]
-        }
+        "header": [{ "key": "x-session-key", "value": "{{studentSessionKey}}" }],
+        "url": "{{baseUrl}}/student/report-card"
       }
     },
     {
-      "name": "Meet Links",
+      "name": "15 Fees",
       "request": {
         "method": "GET",
-        "header": [
-          { "key": "x-session-key", "value": "{{sessionKey}}" }
-        ],
-        "url": {
-          "raw": "https://ascento-abacus.onrender.com/api/student/meetLinks",
-          "protocol": "https",
-          "host": ["ascento-abacus","onrender","com"],
-          "path": ["api","student","meetLinks"]
-        }
+        "header": [{ "key": "x-session-key", "value": "{{studentSessionKey}}" }],
+        "url": "{{baseUrl}}/student/fees"
+      }
+    },
+    {
+      "name": "16 Timetable",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "x-session-key", "value": "{{studentSessionKey}}" }],
+        "url": "{{baseUrl}}/student/timetable"
       }
     }
-  ],
-  "variable": [
-    { "key": "sessionKey", "value": "" }
   ]
 }

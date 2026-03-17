@@ -1,5 +1,6 @@
 'use strict';
 
+const crypto = require('crypto');
 const AppError = require('../../core/AppError');
 const Domain = require('../../models/domain.model');
 const Session = require('../../models/Session.model');
@@ -48,13 +49,13 @@ const create = async (data, adminId) => {
   const normalizedData = normalizeStudentPayload(data);
   await ensureDomainExists(normalizedData.domainId);
 
-  // Always generate a secure temporary password if not provided
-  const tempPassword = normalizedData.password || `Stu@${Math.random().toString(36).slice(-8)}`;
+  // Student onboarding always starts with a temporary password.
+  const tempPassword = `Stu@${crypto.randomBytes(4).toString('hex')}`;
   const student = await Student.create({
     ...normalizedData,
     password: tempPassword,
     parentEmail: normalizedData.parentEmail.toLowerCase().trim(),
-    isPasswordTemporary: !normalizedData.password,
+    isPasswordTemporary: true,
     createdBy: adminId,
     updatedBy: adminId,
   });
@@ -66,8 +67,39 @@ const create = async (data, adminId) => {
   return {
     student: sanitiseStudent(createdStudent),
     studentLoginEmail: createdStudent.parentEmail,
-    temporaryPassword: !normalizedData.password ? tempPassword : null,
+    temporaryPassword: tempPassword,
   };
+};
+
+const changePassword = async (studentId, { currentPassword, newPassword }) => {
+  if (!currentPassword || !newPassword) {
+    throw new AppError('currentPassword and newPassword are required.', 400);
+  }
+
+  if (currentPassword === newPassword) {
+    throw new AppError('New password must be different from the current password.', 400);
+  }
+
+  if (newPassword.length < 6) {
+    throw new AppError('New password must be at least 6 characters.', 400);
+  }
+
+  const student = await Student.findById(studentId).select('+password');
+  if (!student) {
+    throw new AppError('Student not found.', 404);
+  }
+
+  const isMatch = await student.comparePassword(currentPassword);
+  if (!isMatch) {
+    throw new AppError('Current password is incorrect.', 401);
+  }
+
+  student.password = newPassword;
+  student.isPasswordTemporary = false;
+  student.updatedBy = student._id;
+  await student.save();
+
+  return sanitiseStudent(student);
 };
 
 const list = async ({ page = 1, limit = 20, domainId, status, search } = {}) => {
@@ -174,4 +206,4 @@ const remove = async (id) => {
   await Session.deleteMany({ userId: student._id, userModel: 'Student' });
 };
 
-module.exports = { create, list, getById, update, remove };
+module.exports = { create, list, getById, update, remove, changePassword };

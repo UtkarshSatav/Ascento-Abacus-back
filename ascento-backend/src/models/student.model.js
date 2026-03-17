@@ -20,6 +20,24 @@ const generateRollNumber = async function () {
   return `STU-${year}-${next}`;
 };
 
+// Generates login userId in format STUUSR-YYYY-XXXX.
+const generateStudentUserId = async function () {
+  const year = new Date().getFullYear();
+  const Student = mongoose.models.Student || mongoose.model('Student');
+  const prefix = `STUUSR-${year}-`;
+
+  const latest = await Student.findOne({ userId: { $regex: `^${prefix}` } })
+    .select('userId')
+    .sort({ userId: -1 })
+    .lean();
+
+  const latestSeq = latest && latest.userId
+    ? Number(latest.userId.split('-').pop()) || 0
+    : 0;
+
+  return `${prefix}${String(latestSeq + 1).padStart(4, '0')}`;
+};
+
 const studentSchema = new mongoose.Schema({
   fullName: {
     type: String,
@@ -72,6 +90,11 @@ const studentSchema = new mongoose.Schema({
     ref: 'Domain',
     required: [true, 'domainId is required'],
     index: true,
+  },
+  userId: {
+    type: String,
+    unique: true,
+    trim: true,
   },
   rollNumber: {
     type: String,
@@ -134,6 +157,9 @@ studentSchema.set('toObject', { virtuals: true });
 
 // Set roll number before validation so required validator passes.
 studentSchema.pre('validate', async function (next) {
+  if (this.isNew && !this.userId) {
+    this.userId = await generateStudentUserId.call(this);
+  }
   if (this.isNew && !this.rollNumber) {
     this.rollNumber = await generateRollNumber.call(this);
   }

@@ -79,4 +79,14 @@ const remove = asyncHandler(async (req, res) => {
   return new ApiResponse(200, 'Student deleted').send(res);
 });
 
-module.exports = { create, list, getById, update, remove };
+const changePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const student = await studentService.changePassword(req.user._id, {
+    currentPassword,
+    newPassword,
+  });
+
+  return new ApiResponse(200, 'Password changed successfully', student).send(res);
+});
+
+module.exports = { create, list, getById, update, remove, changePassword };
